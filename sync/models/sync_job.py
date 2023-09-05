@@ -109,6 +109,7 @@ class SyncJob(models.Model):
         print('- sync_job _compute_sync_task_id')
         for r in self:
             print('r =',r)
+            print('fjrursfhrs')
             print('r.parent_job_id =',r.parent_job_id)
             if r.parent_job_id:
                 r.task_id = r.parent_job_id.task_id
