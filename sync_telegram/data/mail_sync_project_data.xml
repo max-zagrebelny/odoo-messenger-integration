@@ -18,12 +18,13 @@ def handle_db(records):
 
 def process_message(message):
     print('message =',message)
+    bot_name = params.BOT_NAME
     channel = env["mail.channel"].browse(message.res_id)
     print('channel =',channel)
     if channel.channel_type != 'multi_livechat_telegram':
         return
 
-    channel_link = channel.search_links(TG_CHAT_CHANNEL_REL)
+    channel_link = channel.search_links(TG_CHAT_CHANNEL_REL, bot_name)
     print('channel_link =',channel_link)
     if not channel_link:
         return
@@ -33,9 +34,9 @@ def process_message(message):
     #channel_link = get_link(TG_CHAT_CHANNEL_REL, telegram_user_ref)
 
     print('TG_PARTNER_REL =',TG_PARTNER_REL)
-    print('message.author_id.search_links(TG_PARTNER_REL) =',message.author_id.search_links(TG_PARTNER_REL))
+    print('message.author_id.search_links(TG_PARTNER_REL,bot_name) =',message.author_id.search_links(TG_PARTNER_REL,bot_name))
     print('odoobot_id =',odoobot_id)
-    if message.author_id.search_links(TG_PARTNER_REL) or message.author_id.id == odoobot_id:
+    if message.author_id.search_links(TG_PARTNER_REL,bot_name) or message.author_id.id == odoobot_id:
         # this message is from partner or odoo bot
         return
 

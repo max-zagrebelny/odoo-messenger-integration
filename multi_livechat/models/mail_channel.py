@@ -19,7 +19,6 @@ class MailChannel(models.Model):
     def _prepare_multi_livechat_channel_vals(
         self, channel_type, channel_name, partner_ids
     ):
-
         return {
             "channel_partner_ids": [(4, pid) for pid in partner_ids],
             "group_public_id": None,
