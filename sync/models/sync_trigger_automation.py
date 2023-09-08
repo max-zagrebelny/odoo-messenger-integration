@@ -7,7 +7,7 @@ from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
-
+ODOO_CHANNEL_TYPES = ["chat", "livechat", "group"]
 class SyncTriggerAutomation(models.Model):
     _name = "sync.trigger.automation"
     _inherit = ["sync.trigger.mixin", "sync.trigger.mixin.actions"]
@@ -48,7 +48,7 @@ class SyncTriggerAutomation(models.Model):
         if records._name == "mail.message":
             if records.model == 'mail.channel':
                 channel = self.env['mail.channel'].search([('id', '=', records.res_id)])
-                if channel and channel.channel_type == 'multi_livechat_telegram':
+                if channel and channel.channel_type not in ODOO_CHANNEL_TYPES:
                     return True
             return False
         else:

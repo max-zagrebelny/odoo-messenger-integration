@@ -140,7 +140,7 @@ class SyncLink(models.Model):
         vals["relation"] = relation
         if model:
             vals["model"] = model
-        vals['bot_name'] = bot_name
+        vals["bot_name"] = bot_name
         self._log("Create link: %s" % vals)
         print('vals =', vals)
         return self.create(vals)
@@ -439,8 +439,8 @@ class SyncLink(models.Model):
         #     )
 
         # delete_my_code_new
-        def get_link(rel, ref_info,bot_name, model=None):
-            return env["sync.link"]._get_link(rel, ref_info,bot_name, model=model)
+        def get_link(rel, ref_info, bot_name, model=None):
+            return env["sync.link"]._get_link(rel, ref_info, bot_name, model=model)
 
         # def get_link(rel, ref_info, model=None):
         #     return env["sync.link"]._get_link(rel, ref_info, model=model)
