@@ -23,7 +23,6 @@ MAX_VIDEO_SIZE = 27_262_976
 
 
 class SyncProjectViber(models.Model):
-
     _inherit = "sync.project.context"
 
     @api.model
@@ -45,8 +44,6 @@ class SyncProjectViber(models.Model):
 
         - multi_livechat.*
         """
-
-        params = eval_context["params"]
 
         if not secrets.VIBER_BOT_TOKEN:
             raise Exception(_("Viber bot token is not set"))
@@ -157,3 +154,5 @@ class SyncProjectViber(models.Model):
             "MAX_PHOTO_SIZE": MAX_PHOTO_SIZE,
             "MAX_VIDEO_SIZE": MAX_VIDEO_SIZE,
         }
+
+# додаємо коментарій
