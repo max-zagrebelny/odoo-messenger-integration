@@ -155,4 +155,4 @@ class SyncProjectViber(models.Model):
             "MAX_VIDEO_SIZE": MAX_VIDEO_SIZE,
         }
 
-# додаємо коментарій
+# додаємо коментарій dddd
