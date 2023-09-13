@@ -5,9 +5,11 @@
 import json
 import logging
 
-from requests import request
+import requests
+from requests import request as rq
+from twilio.rest import Client
+from odoo import _, api, models, http
 
-from odoo import _, api, models
 
 from odoo.addons.multi_livechat.tools import get_multi_livechat_eval_context
 from odoo.addons.sync.models.sync_project import AttrDict
@@ -31,73 +33,59 @@ class SyncProjectWhatsApp(models.Model):
         if not secrets.WHATSAPP_CHATAPI_TOKEN:
             raise Exception(_("WhatsApp Chat API token is not set"))
 
-        def whatsapp_service_request(method, url, data=None):
-            r = request(
-                method,
-                params.WHATSAPP_CHATAPI_API_URL.rstrip("/")
-                + url
-                + "?token="
-                + secrets.WHATSAPP_CHATAPI_TOKEN,
-                json=data,
-                timeout=5,
-            )
-            r.raise_for_status()
-            return r
+        account_sid = params.WHATSAPP_CHATAPI_API_URL
+        auth_token = secrets.WHATSAPP_CHATAPI_TOKEN
+        client = Client(account_sid, auth_token)
 
-        @LogExternalQuery("WhatsApp->set_webhook", eval_context)
-        def set_webhook(url):
-            return whatsapp_service_request(
-                "post", "/webhook", {"set": True, "webhookUrl": url}
-            )
+        # Створення вебхука
+        # webhook = client.incoming_phone_numbers('WhatsApp:+1234567890') \
+        #     .update(
+        #     sms_url='https://ваш_сервер.com/twilio/webhook',
+        #     sms_method='POST'
+        # )
+        # def whatsapp_service_request(method, url, data=None):
+        #     r = request(
+        #         method,
+        #         params.WHATSAPP_CHATAPI_API_URL.rstrip("/")
+        #         + url
+        #         + "?token="
+        #         + secrets.WHATSAPP_CHATAPI_TOKEN,
+        #         json=data,
+        #         timeout=5,
+        #     )
+        #     r.raise_for_status()
+        #     return r
+
+        # @LogExternalQuery("WhatsApp->set_webhook", eval_context)
+        # def set_webhook(url):
+        #     return whatsapp_service_request(
+        #         "post", "/webhook", {"set": True, "webhookUrl": url}
+        #     )
 
         @LogExternalQuery("WhatsApp->send_message", eval_context)
-        def send_message(chat_id, body):
-            return whatsapp_service_request(
-                "post",
-                "/sendMessage",
-                {
-                    "chatId": chat_id,
-                    "body": body,
-                },
+        def send_message(from_user, to, body):
+            message = client.messages.create(
+                body=body,
+                from_=from_user,
+                to=to
             )
-
-        @LogExternalQuery("WhatsApp->send_file", eval_context)
-        def send_file(chat_id, attachment, caption=None):
-            return whatsapp_service_request(
-                "post",
-                "/sendFile",
-                {
-                    "chatId": chat_id,
-                    "body": "".join(
-                        [
-                            "data:",
-                            attachment.mimetype or "application/octet-stream",
-                            ";base64,",
-                            attachment.datas.decode(),
-                        ]
-                    ),
-                    "filename": attachment.name or "unknown.bin",
-                    "caption": caption or "",
-                },
-            )
+            return message.sid
 
         multi_livechat_context = AttrDict(
             get_multi_livechat_eval_context(
-                self.env, "multi_livechat_whatsapp_chatapi", eval_context
+                self.env, "multi_livechat_whatsapp", eval_context
             )
         )
 
         def whatsapp_webhook_parse(request):
-            # if you are using python 3.5, json.loads with bytes argument will fail
-            # note this, if you are backporting to 12.0
-            request_json = json.loads(request.data)
-            return request_json["messages"]
+            data = dict(http.Request(request).get_http_params())
+            return data
 
         whatsapp_service_api = AttrDict(
             {
-                "set_webhook": set_webhook,
+                # "set_webhook": set_webhook,
                 "send_message": send_message,
-                "send_file": send_file,
+                # "send_file": send_file,
             }
         )
 

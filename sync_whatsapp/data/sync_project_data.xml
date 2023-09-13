@@ -58,6 +58,24 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
         <field name="url" eval="" />
         <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
     </record>
+    <record id="webhook-chat--project-parameter" model="sync.project.param">
+        <field name="key">BOT_NAME</field>
+        <field name="initial_value">Odoo</field>
+        <field name="description">
+            Set to "no" to disable redirecting whatsapp messages to odoo chat
+        </field>
+        <field name="url" eval="" />
+        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+    </record>
+    <record id="webhook-chat--project-parameter" model="sync.project.param">
+        <field name="key">BOT_NUMBER</field>
+        <field name="initial_value">whatsapp:+1 415 523 8886</field>
+        <field name="description">
+            Set to "no" to disable redirecting whatsapp messages to odoo chat
+        </field>
+        <field name="url" eval="" />
+        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+    </record>
     <record id="operator-ids--project-parameter" model="sync.project.param">
         <field name="key">OPERATOR_IDS</field>
         <field name="initial_value">2</field>
@@ -90,34 +108,32 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
         <field
             name="code"
         ><![CDATA[def handle_webhook(httprequest):
-  data = json.loads(httprequest.data.decode("utf-8"))
-  log("Raw data: %s" % data, LOG_DEBUG)
+  message = whatsapp_webhook_parse(httprequest)
 
   def partner_vals(message):
     return {
-      "name": message["senderName"],
-      "phone": "+" + message["author"].split("@")[0],
+      "name": message["ProfileName"] + "[" + params.BOT_NAME + "]",
+      "phone": "+" + message["WaId"],
       "comment": str(message),
     }
 
-  messages = whatsapp_webhook_parse(httprequest)
-  for message in messages:
-    if message["fromMe"]:
-      continue
+  # for message in messages:
+  #   if message["fromMe"]:
+  #     continue
 
-    whatsapp_user_ref = message["author"]
+  whatsapp_user_ref = message["From"]
 
-     # TODO: parse avatar from "profilePicThumObj"
+  # TODO: parse avatar from "profilePicThumObj"
 
-    partner_kwargs = dict(message=message)
-    partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_CHATAPI_PARTNER, whatsapp_user_ref, partner_vals, partner_kwargs)
+  partner_kwargs = dict(message=message)
+  partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_CHATAPI_PARTNER, whatsapp_user_ref, partner_vals, partner_kwargs, params.BOT_NAME)
 
-    if params.WEBHOOK_CHAT != "no":
+  if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
       operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
       operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
       partner_ids = [partner.id] + operators_partner_ids
-      channel, is_new_channel = multi_livechat.get_channel(WHATSAPP_CHATAPI_CHANNEL, whatsapp_user_ref, channel_name, partner_ids)
+      channels, is_new_channel = multi_livechat.get_channel(WHATSAPP_CHATAPI_CHANNEL, whatsapp_user_ref, channel_name, partner_ids, params.BOT_NAME)
 
       if params.CHAT_MODEL != "res.partner":
         def thread_vals(partner):
@@ -126,29 +142,29 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
           }
         thread_kwargs = dict(partner=partner)
         record_message = """<b><a href="channel_url">Chat with partner is created.</a></b>""".format(
-          channel_url=multi_livechat.get_channel_url(channel)
+          channel_url=multi_livechat.get_channel_url(channels[0])
         )
         thread, is_new_thread = multi_livechat.get_thread(
           "%s:%s" % (WHATSAPP_CHATAPI_THREAD, params.CHAT_MODEL),
-          message["chatId"],
+          message["From"],
           thread_vals,
           thread_kwargs,
           params.CHAT_MODEL,
           record_message,
+          params.BOT_NAME
         )
         if is_new_thread:
-          multi_livechat.message_post(channel,
+          multi_livechat.message_post(channels[0],
           """<b><a href="{record_url}">Record is created. </a></b>""".format(
             record_url=multi_livechat.get_record_url(thread)
             ))
 
-      odoo_message_text = message["body"]
-      if message.get("caption"):
-          odoo_message_text = message["caption"] + "<br />" + (odoo_message_text or "")
+      odoo_message_text = message["Body"]
 
-      # Chat API sends files as links
       if odoo_message_text:
+        for channel in channels:
           message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
+
 
 
 def message_post(is_new, *args, **kwargs):
@@ -166,7 +182,7 @@ def message_post(is_new, *args, **kwargs):
         <field name="trigger_name">WHATSAPP</field>
         <field name="active" eval="True" />
         <field name="sync_task_id" ref="process-whatsapp-events--sync-task" />
-        <field name="webhook_type">json</field>
+        <field name="webhook_type">http</field>
     </record>
     <record id="send-response-via-odoo--sync-task" model="sync.task">
         <field name="name">Send Response via Odoo</field>
@@ -174,8 +190,8 @@ def message_post(is_new, *args, **kwargs):
         <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
         <field
             name="code"
-        ><![CDATA[def send_whatsapp_message(external_chat_ref, text):
-    whatsapp_service_api.send_message(external_chat_ref, text)
+        ><![CDATA[def send_whatsapp_message(external_user_ref, text):
+    whatsapp_service_api.send_message(params.BOT_NUMBER, external_user_ref, text)
 
 def send_whatsapp_file(external_chat_ref, attachment):
     whatsapp_service_api.send_file(external_chat_ref, attachment)
@@ -185,7 +201,7 @@ def handle_db(records):
         process_message(mail_message)
 
 def process_message(mail_message):
-    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_CHATAPI_PARTNER):
+    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_CHATAPI_PARTNER, params.BOT_NAME):
         log("Message from external chat. No need to send back. Ignore")
         return
 
@@ -194,7 +210,7 @@ def process_message(mail_message):
         log("channel type is not %s" % multi_livechat.channel_type, LOG_DEBUG)
         return
 
-    channel_link = channel.search_links(WHATSAPP_CHATAPI_CHANNEL)
+    channel_link = channel.search_links(WHATSAPP_CHATAPI_CHANNEL, params.BOT_NAME)
     if not channel_link:
         log("channel link not found")
         return

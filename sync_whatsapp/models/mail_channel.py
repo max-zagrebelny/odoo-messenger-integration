@@ -7,6 +7,6 @@ class MailChannel(models.Model):
     _inherit = "mail.channel"
 
     channel_type = fields.Selection(
-        selection_add=[("multi_livechat_whatsapp_chatapi", "WhatsApp (Chat API)")],
-        ondelete={"multi_livechat_whatsapp_chatapi": "cascade"},
+        selection_add=[("multi_livechat_whatsapp", "WhatsApp (Chat API)")],
+        ondelete={"multi_livechat_whatsapp": "cascade"},
     )
