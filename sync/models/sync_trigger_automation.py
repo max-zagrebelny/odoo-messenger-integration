@@ -40,9 +40,11 @@ class SyncTriggerAutomation(models.Model):
                 )
                 return
             if self.is_record_mail_message(records):
+                print(self.sync_task_id)
                 self.sync_task_id.start(self, args=(records,), with_delay=True)
 
     def is_record_mail_message(self, records):
+        # Перевірка чи є повідомлення з каналу де спілкується оператор і користувач телеграма
         if records._name == "mail.message":
             if records.model == 'mail.channel':
                 channel = self.env['mail.channel'].search([('id', '=', records.res_id)])

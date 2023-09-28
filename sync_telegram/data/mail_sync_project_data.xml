@@ -18,24 +18,24 @@ def handle_db(records):
 
 def process_message(message):
     print('message =',message)
+    bot_id = bot.id
     channel = env["mail.channel"].browse(message.res_id)
     print('channel =',channel)
     if channel.channel_type != 'multi_livechat_telegram':
         return
 
-    channel_link = channel.search_links(TG_CHAT_CHANNEL_REL)
+    channel_link = channel.search_links(TELEGRAM_CHANNEL, bot_id)
     print('channel_link =',channel_link)
     if not channel_link:
         return
 
     telegram_user_ref = channel_link.external
     print('telegram_user_ref =',telegram_user_ref)
-    #channel_link = get_link(TG_CHAT_CHANNEL_REL, telegram_user_ref)
+    #channel_link = get_link(TELEGRAM_CHANNEL, telegram_user_ref)
 
-    print('TG_PARTNER_REL =',TG_PARTNER_REL)
-    print('message.author_id.search_links(TG_PARTNER_REL) =',message.author_id.search_links(TG_PARTNER_REL))
+    partner = get_partner(bot_id, telegram_user_ref)
     print('odoobot_id =',odoobot_id)
-    if message.author_id.search_links(TG_PARTNER_REL) or message.author_id.id == odoobot_id:
+    if partner.id == message.author_id.id or message.author_id.id == odoobot_id:
         # this message is from partner or odoo bot
         return
 
@@ -43,7 +43,11 @@ def process_message(message):
     print('message.body =',message.body)
     if message.body:
         message_html = "%s\n\n<i>%s</i>" % (message.body, message.author_id.name)
-        telegram.sendMessage(telegram_user_ref, message_html, parse_mode='HTML', channel=channel)
+        buttons = get_right_buttons(partner, telegram_user_ref, bot_id)
+        if len(buttons) == 0:
+            telegram.sendMessage(telegram_user_ref, message_html, parse_mode='HTML', channel=channel, reply_markup=telegram.delKeyBoard())
+        else:
+            telegram.sendMessage(telegram_user_ref, message_html, parse_mode='HTML', channel=channel, reply_markup=telegram.addKeyBoard(buttons))
 
     print('message.attachment_ids =',message.attachment_ids)
     if message.attachment_ids:

@@ -13,9 +13,11 @@
         <field
             name="common_code"
         ><![CDATA[
-TG_PARTNER_REL = "TG_PARTNER_REL"
-TG_CHAT_MODEL_REL = "TG_CHAT_MODEL_REL:"
-TG_CHAT_CHANNEL_REL = "TG_CHAT_CHANNEL_REL"
+TELEGRAM_PARTNER = "TELEGRAM_PARTNER"
+TELEGRAM_CHAT_MODEL = "TELEGRAM_CHAT_MODEL"
+TELEGRAM_CHANNEL = "TELEGRAM_CHANNEL"
+
+BUTTONS = ["Вказати електрону пошту", "Вказати номер телефону", "Зв'язатися з оператором"]
 
 operators_user_list = list(map(int, params.OPERATOR_IDS.split(",")))
 operators_partner_list = [env.user.browse(x).partner_id.id for x in operators_user_list]
@@ -23,17 +25,28 @@ operators_partner_list = [env.user.browse(x).partner_id.id for x in operators_us
 odoobot_id = env.user.browse(1).partner_id.id
 
 
-def user2name(user):
+def user2name(user, second_text):
     name = user.first_name
     if user.last_name:
         name += ' %s' % user.last_name
     if user.username:
         name += ' (@%s)' % user.username
-    return name
+    return name, second_text
+
+def get_right_buttons(partner, telegram_user_ref, bot_id):
+    buttons = []
+    if not partner.phone:
+        buttons.append("Вказати номер телефону")
+    if not partner.email:
+        buttons.append("Вказати електрону пошту")
+    if not get_link(TELEGRAM_CHANNEL, telegram_user_ref, bot_id):
+        buttons.append("Зв'язатися з оператором")
+    return buttons
         ]]></field>
     </record>
     <record id="telegram_project_secret" model="sync.project.secret">
         <field name="key">TELEGRAM_BOT_TOKEN</field>
+        <field name="initial_value">6304211758:AAEDMP8LuQxU-82zRSzd4iJiZb0Q6atqYUI</field>
         <field name="description">
             Authentication token provided by https://t.me/BotFather
         </field>
@@ -51,22 +64,33 @@ def user2name(user):
     </record>
     <record id="telegram_project_param_prefix" model="sync.project.param">
         <field name="key">PARTNER_NAME_TEMPLATE</field>
-        <field name="initial_value">%s [Telegram]</field>
+        <field name="initial_value">%s [%s]</field>
         <field name="description">
-            Template for new partner name. Must have single %s
+            Template for new partner name. Must have double %s
         </field>
         <field name="url" eval="" />
         <field name="project_id" ref="telegram_project" />
     </record>
     <record id="record-name-prefix_project-parameter" model="sync.project.param">
         <field name="key">CHAT_RECORD_NAME_TEMPLATE</field>
-        <field name="initial_value">%s [Telegram]</field>
+        <field name="initial_value">%s [%s]</field>
         <field name="description">
-            Template for new record name. Must have single %s
+            Template for new record name. Must have double %s
         </field>
         <field name="url" eval="" />
         <field name="project_id" ref="telegram_project" />
     </record>
+
+    <record id="record-bot-name" model="sync.project.param">
+        <field name="key">BOT_NAME</field>
+        <field name="initial_value">bot_odoo_1</field>
+        <field name="description">
+            Name of Bot
+        </field>
+        <field name="url" eval="" />
+        <field name="project_id" ref="telegram_project" />
+    </record>
+
     <record id="telegram_project_param_model" model="sync.project.param">
         <field name="key">CHAT_MODEL</field>
         <field name="initial_value">crm.lead</field>
@@ -128,67 +152,87 @@ def handle_webhook(httprequest):
     odoo_message_text = message.text or message.caption or ""
     print('odoo_message_text =', odoo_message_text)
 
-    name = params.PARTNER_NAME_TEMPLATE % user2name(message.from_user)
-    record_name = params.CHAT_RECORD_NAME_TEMPLATE % user2name(message.from_user)
+    bot_id = bot.id
     telegram_user_ref = message.from_user.id
     print('telegram_user_ref =', telegram_user_ref)
     main_operator = env.user.browse(operators_user_list[0])
     print('operators_user_list =', operators_user_list)
     print('main_operator =', main_operator)
 
-    partner_link = get_link(TG_PARTNER_REL, telegram_user_ref)
-    print('partner_link =', partner_link)
+    def partner_vals(update, telegram_user_ref):
+        name = update.message.from_user.first_name
+        second = update.message.from_user.last_name
+        if second:
+            name += ' %s' % second
+        name += ' [' + params.BOT_NAME + ']'
+        return {
+            'name': name,
+            #'lang': update.message.json.from.language_code,
+            'image_1920': telegram.getUserPhoto(telegram_user_ref)
+        }
 
-    if not partner_link:
-        partner_image = telegram.getUserPhoto(telegram_user_ref)
-        partner = env["res.partner"].with_user(main_operator).create({"name": name, "image_1920": partner_image})
-        print('partner =', partner)
-        partner.set_link(TG_PARTNER_REL, telegram_user_ref, sync_date=None, allow_many2many=False)
-        partner_link = get_link(TG_PARTNER_REL, telegram_user_ref)
-        print('partner_link =', partner_link)
+    partner_kwargs = dict(update=update, telegram_user_ref=telegram_user_ref)
+    partner, is_new_partner = get_partner_with_create(bot_id, telegram_user_ref, partner_vals, partner_kwargs)
 
-    conn_with_operator = False
-    if message.text == "/start":
-        telegram.sendMessage(telegram_user_ref, texts.TELEGRAM_WELCOME_MESSAGE,reply_markup=telegram.addKeyBoard(["Зв'язатися з оператором"]))
+    conn_with_operator = True if get_link(TELEGRAM_CHANNEL, telegram_user_ref, bot_id) else False
+    print('Hello-----')
+    if message.text == '/start':
+        telegram.sendMessage(telegram_user_ref, "Вітаю, можете ввести Ваші дані", reply_markup=telegram.addKeyBoard(BUTTONS))
+        return
+    elif message.text == 'Вказати електрону пошту':
+        telegram.sendMessage(telegram_user_ref, "Напишіть вашу електрону пошту \nНаприклад test@gmail.com",reply_markup=telegram.delKeyBoard())
+        set_state(partner.id,bot_id,'mail')
+        return
+    elif message.text == 'Вказати номер телефону':
+        telegram.sendMessage(telegram_user_ref, "Напишіть ваш номер телефону з командою \nНаприклад +380344553087",reply_markup=telegram.delKeyBoard())
+        set_state(partner.id,bot_id,'phone')
+        return
+    elif get_state(partner.id, bot_id) == 'mail':
+        mail = message.text
+        if not re_match('[^@]+@[^@]+\.[^@]+',mail):
+            telegram.sendMessage(telegram_user_ref, "Неправильно введена пошта. Спробуйте ще раз")
+        else:
+            partner.write({'email':mail})
+            telegram.sendMessage(telegram_user_ref, "Дякую дані збережено", reply_markup=telegram.addKeyBoard(get_right_buttons(partner, telegram_user_ref, bot_id)))
+        print('hello ----')
+        set_state(partner.id,bot_id,'None')
+        return
+    elif get_state(partner.id,bot_id) == 'phone':
+        phone = message.text
+        if not re_match("^\\+?[1-9][0-9]{11,11}$",phone):
+            telegram.sendMessage(telegram_user_ref, "Неправильно введений номер телефону. Спробуйте ще раз")
+        else:
+            partner.write({'phone':phone})
+            telegram.sendMessage(telegram_user_ref, "Дякую дані збережено", reply_markup=telegram.addKeyBoard(get_right_buttons(partner, telegram_user_ref, bot_id)))
+        print('hello ----')
+        set_state(partner.id,bot_id,'None')
         return
     elif message.text == "Зв'язатися з оператором":
         conn_with_operator = True
-    elif bool(update.edited_message):
-        odoo_message_text = "Contact has edited the message:"
 
-    channel_link = get_link(TG_CHAT_CHANNEL_REL, telegram_user_ref)
-    print('channel_link =', channel_link)
-    is_new = False
-    if channel_link:
-        channel = channel_link.odoo
-    elif conn_with_operator and not channel_link:
-        is_new = True
-        partners = [partner_link.odoo.id] + operators_partner_list
-        print('partners =', partners)
-        channel = telegram.create_mail_сhannel(partners, record_name)
-        print('channel =', channel)
-        channel.set_link(TG_CHAT_CHANNEL_REL, telegram_user_ref)
-
-    model_rel = TG_CHAT_MODEL_REL + params.CHAT_MODEL
+    partner_ids = [partner.id] + operators_partner_list
+    if conn_with_operator:
+        channels, is_new_channel = multi_livechat.get_channel(TELEGRAM_CHANNEL, telegram_user_ref, partner.name, partner_ids, bot_id)
+    print('------test')
     if params.CHAT_MODEL != "res.partner":
-        record_link = get_link(model_rel, telegram_user_ref)
+        record_link = get_link(TELEGRAM_CHAT_MODEL, telegram_user_ref, bot_id)
         print('record_link =', record_link)
         if not record_link and conn_with_operator:
             record = env[params.CHAT_MODEL].with_user(main_operator).create(
-                {"name": record_name, "partner_id": partner_link.odoo.id})
+                {"name": partner.name, "partner_id": partner.id})
             print('record =', record)
-            record.set_link(model_rel, telegram_user_ref, sync_date=None, allow_many2many=False)
+            record.set_link(TELEGRAM_CHAT_MODEL, telegram_user_ref, bot_id, sync_date=None, allow_many2many=False)
 
             multi_livechat.message_post(record,
                                 """<b><a href="/web#action=%s&active_id=mail.channel_%s">Chat with partner is created. </a></b>""" %
-                                (env.ref("mail.action_discuss").id, channel.id))
+                                (env.ref("mail.action_discuss").id, channels[0].id))
 
             print('message "Chat with parnter created" is posted')
 
-            multi_livechat.message_post(channel, """<b><a href="/web#id=%s&model=%s">Record is created. </a></b>""" %
+            multi_livechat.message_post(channels[0], """<b><a href="/web#id=%s&model=%s">Record is created. </a></b>""" %
                                 (record.id, record._name))
             print('message "Record is created" is posted')
-
+    print('test ---------')
     file_bin_data = []
     telegram_document = update.message.document
     telegram_photo = update.message.photo
@@ -210,18 +254,18 @@ def handle_webhook(httprequest):
             file_bin_data = telegram.getDocumentFile(telegram_user_ref, telegram_document)
 
         elif telegram_photo or telegram_media or telegram_document:
-            multi_livechat.message_post(channel,
+            multi_livechat.message_post(channels[0],
                                 "Incoming file is too big and cannot be downloaded due to Telegram API restirctions")
             telegram.sendMessage(telegram_user_ref, "File is too big, file size must not exceed 20 MB.")
 
         if telegram_sticker:
             log("telegram_sticker: %s" % telegram_sticker, LOG_INFO)
-            multi_livechat.message_post(channel, telegram_sticker.emoji, author=partner_link.odoo.id)
+            multi_livechat.message_post(channels[0], telegram_sticker.emoji, author=partner.id)
 
-    print('partner_link.odoo.id =', partner_link.odoo.id)
+    print('partner.id =', partner.id)
 
-    if not conn_with_operator:
-        message_post(is_new, channel, odoo_message_text, attachments=[file_bin_data], author=partner_link.odoo.id)
+    if conn_with_operator:
+        message_post(is_new_channel, channels[0], odoo_message_text, attachments=[file_bin_data], author=partner.id)
 
 
 def message_post(is_new, *args, **kwargs):

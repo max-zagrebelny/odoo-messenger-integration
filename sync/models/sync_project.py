@@ -27,6 +27,8 @@ from odoo.addons.queue_job.exception import RetryableJobError
 from ..tools import url2base64, url2bin
 from .ir_logging import LOG_CRITICAL, LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_WARNING
 
+from re import match
+
 _logger = logging.getLogger(__name__)
 DEFAULT_LOG_NAME = "Log"
 
@@ -264,13 +266,17 @@ class SyncProject(models.Model):
         # delete_my_code
         print("context - ", context)
         env = self.env(context=context)
+        sync_partner_context = env['sync.partner']._get_eval_context() # delete_my_code
         link_functions = env["sync.link"]._get_eval_context()
         print("link_functions - ", link_functions)
         eval_context = dict(
             **link_functions,
             **self._get_sync_functions(log, link_functions),
+            **sync_partner_context, # delete_my_code
             **{
-                "print":print, # delete_my_code
+                "bot": self, # delete_my_code
+                "print": print, # delete_my_code
+                "re_match": match, # delete_my_code
                 "env": env,
                 "log": log,
                 "log_transmission": log_transmission,
