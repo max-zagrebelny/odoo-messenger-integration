@@ -6,7 +6,13 @@
 import base64
 import logging
 
+import xml.etree.ElementTree as ET # для загрузки контексту
+
 from pytz import timezone
+
+from odoo import api, fields, models, tools
+from odoo.modules import get_module_resource
+import base64
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -52,7 +58,7 @@ class SyncProject(models.Model):
     # Deprecated, please use eval_context_ids
     # TODO: delete in v17 release
     eval_context = fields.Selection([], string="Evaluation context")
-    eval_context_ids = fields.Many2many(
+    eval_context_ids = fields.Many2one(
         "sync.project.context", string="Evaluation contexts"
     )
     eval_context_description = fields.Text(compute="_compute_eval_context_description")
@@ -90,6 +96,13 @@ class SyncProject(models.Model):
     log_ids = fields.One2many("ir.logging", "sync_project_id")
     log_count = fields.Integer(compute="_compute_log_count")
 
+    user_ids = fields.One2many('sync.partner', 'bot_id')
+    users_count = fields.Integer(compute="_compute_users_count")
+
+    token = fields.Char('Token')
+
+    send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+
     def copy(self, default=None):
         default = dict(default or {})
         default["active"] = False
@@ -98,6 +111,9 @@ class SyncProject(models.Model):
     def unlink(self):
         self.with_context(active_test=False).mapped("task_ids").unlink()
         return super().unlink()
+
+    def action_start_button(self):
+        return self.trigger_button_ids.start_button()
 
     def _compute_eval_context_description(self):
         for r in self:
@@ -129,6 +145,11 @@ class SyncProject(models.Model):
     def _compute_log_count(self):
         for r in self:
             r.log_count = len(r.log_ids)
+
+    @api.depends('user_ids')
+    def _compute_users_count(self):
+        for r in self:
+            r.users_count = len(r.user_ids)
 
     def _compute_triggers(self):
         for r in self:
@@ -215,6 +236,7 @@ class SyncProject(models.Model):
         for p in self.param_ids:
             params[p.key] = p.value
         print('params =',params)
+        params['BOT_NAME'] = self.name
 
         texts = AttrDict()
         for p in self.text_param_ids:
@@ -323,6 +345,8 @@ class SyncProject(models.Model):
             for p in self.sudo().secret_ids:
                 secrets[p.key] = p.value
             eval_context_frozen = frozendict(eval_context)
+            secrets = AttrDict()
+            secrets['TELEGRAM_BOT_TOKEN'] = self.token
             print("secrets = ", secrets)
             print("self.eval_context_ids = ",self.eval_context_ids)
             for ec in self.eval_context_ids:
@@ -458,6 +482,101 @@ class SyncProject(models.Model):
             "sync_external": sync_external,
         }
 
+    @api.onchange('eval_context_ids')
+    def parse_xml(self):
+        self.env['sync.project.param'].sudo().with_context(active_test=False).search(
+            [('project_id', '=', self.id)]).unlink()
+        self.env['sync.project.secret'].sudo().with_context(active_test=False).search(
+            [('project_id', '=', self.id)]).unlink()
+        self.env['sync.project.text'].sudo().with_context(active_test=False).search(
+            [('project_id', '=', self.id)]).unlink()
+        self.env['sync.trigger.button'].sudo().with_context(active_test=False).search(
+            [('sync_project_id', '=', self.id)]).unlink()
+        self.env['sync.trigger.automation'].sudo().with_context(active_test=False).search(
+            [('sync_project_id', '=', self.id)]).unlink()
+        self.env['sync.trigger.webhook'].sudo().with_context(active_test=False).search(
+            [('sync_project_id', '=', self.id)]).unlink()
+        self.env['sync.task'].sudo().with_context(active_test=False).search([('project_id', '=', self.id)]).unlink()
+        self.param_ids.unlink()
+        self.text_param_ids.unlink()
+        self.secret_ids.unlink()
+        self.task_ids.unlink()
+        self.trigger_button_ids.unlink()
+        #self.send_to_everyone_ids.unlink()
+
+        if self.eval_context_ids:
+            name_module = 'sync_' + self.eval_context_ids.name
+            path = "odoo-messenger-integration/{}/data/sync_project_data.xml".format(name_module)
+            tree = ET.parse(path)
+            root = tree.getroot()
+
+            for record in root.findall(".//record"):
+                model_name = record.get('model')
+                if model_name != "sync.project.context":
+                    self.extract_fields(root, model_name, record)
+
+    def extract_fields(self, root, model_name, record):
+        model_data = {}
+        data = record.findall(".//field")
+        for field in data:
+            field_name = field.get('name')
+            field_value = None
+            if field_name == "common_code" and model_name == "sync.project":
+                self.common_code = field.text
+                continue
+            elif field_name == 'project_id' or field_name == 'sync_project_id':
+                field_value = self.id
+            elif field_name == "active":
+                field_value = self.check_bool(field.get("eval"))
+            elif field_name == "sync_task_id":
+                task = field.get("ref")
+                field_value = self.find_task(root, task)
+            elif field_name == "filter_pre_domain":
+                field_value = field
+            elif field_name == "model_id":
+                model_id = field.get("ref")
+                model_id = model_id.split("model_", 1)[1].replace("_", ".")
+                model_obj = self.env['ir.model']
+                model_obj = model_obj.search([('model', '=', model_id)], limit=1)
+                field_value = model_obj.id
+            else:
+                field_value = field.text
+            model_data[field_name] = field_value
+        if model_name != "sync.project" and model_name != "sync.task":
+            self.create_model_instance(model_name, model_data)
+
+    def create_model_instance(self, model_name, data):
+        model_obj = self.env[model_name]
+        model_obj.create(data)
+
+    def find_task(self, root, task_ref, ):
+        for task_record in root.findall(".//record[@model='sync.task']"):
+            if task_record.get("id") == task_ref:
+                name = task_record.find(".//field[@name='name']").text
+                active = task_record.find(".//field[@name='active']")
+                active = self.check_bool(active.get("eval"))
+                code = task_record.find(".//field[@name='code']").text
+                param_obj = self.env['sync.task'].create({
+                    'name': name,
+                    'active': active,
+                    'code': code,
+                    'project_id': self.id,
+                })
+                return param_obj.id
+
+    def check_bool(self, value):
+        return value.lower() == 'true' or value == '1'
+
+    def action_send_to_everyone(self):
+        # Відкрийте модальне вікно для створення нового запису в моделі model2
+        return {
+            'name': 'Написати повідомлення',
+            'view_mode': 'form',
+            'res_model': 'send.to.everyone',
+            'type': 'ir.actions.act_window',
+            'target': 'new',
+        }
+
 
 class SyncProjectParamMixin(models.AbstractModel):
 
@@ -529,3 +648,5 @@ class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+

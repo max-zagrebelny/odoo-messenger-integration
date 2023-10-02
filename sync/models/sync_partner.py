@@ -11,6 +11,7 @@ class SyncPartner(models.Model):
     bot_id = fields.Many2one('sync.project', ondelete='cascade', required=True)
     id_user = fields.Integer('ID User', required=True)
     state_user = fields.Char('State', default='None')
+    name = fields.Char('Name', related="partner_id.name")
 
     def set_user(self, partner_id, bot_id, id_user):
         existing = self._search_partner(bot_id, id_user)
@@ -37,7 +38,6 @@ class SyncPartner(models.Model):
 
     def get_partner_with_create(self, bot_id, id_user, callback_vals, callback_kwargs):
         links = self.get_partner(bot_id, id_user)
-        print(links)
         if not links:
             vals = callback_vals(**callback_kwargs)
             print(f"user vals name: {vals['name']}")

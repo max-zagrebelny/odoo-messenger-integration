@@ -15,7 +15,6 @@
     "depends": ["mail"],
     "external_dependencies": {"python": [], "bin": []},
     "data": ["views/mail_channel_views.xml"],
-    "demo": ["data/mail_channel_demo.xml", "data/base_automation_demo.xml"],
     "assets": {
         "web.assets_backend": [
             "multi_livechat/static/src/models/channel.js",

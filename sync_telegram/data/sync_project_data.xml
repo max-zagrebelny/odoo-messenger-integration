@@ -4,11 +4,16 @@
      Copyright 2021-2022 Ivan Yelizariev <https://twitter.com/yelizariev>
      License MIT (https://opensource.org/licenses/MIT). -->
 <odoo>
+    <record id="sync_project_context_telegram" model="sync.project.context">
+        <field name="name">telegram</field>
+        <field name="display_name">Telegram</field>
+    </record>
+
     <record id="telegram_project" model="sync.project">
-        <field name="name">Telegram Integration</field>
+        <field name="name">Your bot name</field>
         <field
             name="eval_context_ids"
-            eval="[(4, ref('sync_project_context_telegram'))]"
+            eval="ref('sync_project_context_telegram')"
         />
         <field
             name="common_code"
@@ -44,6 +49,7 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
     return buttons
         ]]></field>
     </record>
+
     <record id="telegram_project_secret" model="sync.project.secret">
         <field name="key">TELEGRAM_BOT_TOKEN</field>
         <field name="initial_value">6304211758:AAEDMP8LuQxU-82zRSzd4iJiZb0Q6atqYUI</field>
@@ -81,7 +87,7 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
         <field name="project_id" ref="telegram_project" />
     </record>
 
-    <record id="record-bot-name" model="sync.project.param">
+    <!--<record id="record-bot-name" model="sync.project.param">
         <field name="key">BOT_NAME</field>
         <field name="initial_value">bot_odoo_1</field>
         <field name="description">
@@ -89,7 +95,7 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
         </field>
         <field name="url" eval="" />
         <field name="project_id" ref="telegram_project" />
-    </record>
+    </record>-->
 
     <record id="telegram_project_param_model" model="sync.project.param">
         <field name="key">CHAT_MODEL</field>
@@ -102,6 +108,7 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
         <field name="url" eval="" />
         <field name="project_id" ref="telegram_project" />
     </record>
+
     <record id="telegram_project_param_mail_chat" model="sync.project.param">
         <field name="key">WEBHOOK_CHAT</field>
         <field name="initial_value">yes</field>
@@ -111,6 +118,7 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
         <field name="url" eval="" />
         <field name="project_id" ref="telegram_project" />
     </record>
+
     <record id="telegram_project_param_operator_id" model="sync.project.param">
         <field name="key">OPERATOR_IDS</field>
         <field name="initial_value">2</field>
@@ -121,6 +129,7 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
         <field name="url" eval="" />
         <field name="project_id" ref="telegram_project" />
     </record>
+
     <record id="telegram_task_setup" model="sync.task">
         <field name="name">Setup</field>
         <field name="active" eval="True" />
@@ -128,12 +137,11 @@ def get_right_buttons(partner, telegram_user_ref, bot_id):
         <field
             name="code"
         ><![CDATA[
-
 def handle_button():
     telegram.setWebhook(webhooks.TELEGRAM, allowed_updates=["message", "edited_message"])
-
         ]]></field>
     </record>
+
     <record id="telegram_task_tele2odoo" model="sync.task">
         <field name="name">Process Telegram Messages</field>
         <field name="active" eval="True" />
@@ -284,16 +292,131 @@ def message_post(is_new, *args, **kwargs):
 
         ]]></field>
     </record>
+
     <record id="telegram_trigger_button" model="sync.trigger.button">
         <field name="trigger_name">SETUP_TELEGRAM</field>
         <field name="name">Setup webhooks</field>
         <field name="sync_task_id" ref="telegram_task_setup" />
     </record>
+
     <record id="telegram_trigger_webhook" model="sync.trigger.webhook">
         <field name="trigger_name">TELEGRAM</field>
         <field name="active" eval="True" />
         <field name="name">Telegram updates</field>
         <field name="sync_task_id" ref="telegram_task_tele2odoo" />
         <field name="webhook_type">json</field>
+    </record>
+
+    <record id="telegram_task_odoo2tele" model="sync.task">
+        <field name="name">Send response via Odoo</field>
+        <field name="active" eval="True" />
+        <field name="project_id" ref="telegram_project" />
+        <field
+            name="code"
+        ><![CDATA[
+def handle_db(records):
+    print('code Send response via Odoo')
+    print(records)
+    for mail_message in records:
+        process_message(mail_message)
+
+def process_message(message):
+    print('message =',message)
+    bot_id = bot.id
+    channel = env["mail.channel"].browse(message.res_id)
+    print('channel =',channel)
+    if channel.channel_type != 'multi_livechat_telegram':
+        return
+
+    channel_link = channel.search_links(TELEGRAM_CHANNEL, bot_id)
+    print('channel_link =',channel_link)
+    if not channel_link:
+        return
+
+    telegram_user_ref = channel_link.external
+    print('telegram_user_ref =',telegram_user_ref)
+    #channel_link = get_link(TELEGRAM_CHANNEL, telegram_user_ref)
+
+    partner = get_partner(bot_id, telegram_user_ref)
+    print('odoobot_id =',odoobot_id)
+    if partner.id == message.author_id.id or message.author_id.id == odoobot_id:
+        # this message is from partner or odoo bot
+        return
+
+    log("MESSAGE from odoo: channel_id %s - author_id %s - attachment_ids: %s - message_text: %s" % (message.res_id, message.author_id.id, message.attachment_ids, message.body), LOG_DEBUG)
+    print('message.body =',message.body)
+    if message.body:
+        message_html = "%s\n\n<i>%s</i>" % (message.body, message.author_id.name)
+        buttons = get_right_buttons(partner, telegram_user_ref, bot_id)
+        if len(buttons) == 0:
+            telegram.sendMessage(telegram_user_ref, message_html, parse_mode='HTML', channel=channel, reply_markup=telegram.delKeyBoard())
+        else:
+            telegram.sendMessage(telegram_user_ref, message_html, parse_mode='HTML', channel=channel, reply_markup=telegram.addKeyBoard(buttons))
+
+    print('message.attachment_ids =',message.attachment_ids)
+    if message.attachment_ids:
+        for attach in message.attachment_ids:
+            log("ATTACHMENT from odoo: attach.id %s - name %s" % (attach.name, attach.id), LOG_INFO)
+            print('attach =',attach)
+            print('attach.mimetype =',attach.mimetype)
+            if attach.mimetype and "/" in attach.mimetype and attach.mimetype.split("/")[0] == "image":
+                if  attach.file_size < telegram.MAX_SIZE_IMAGE:
+                    telegram.sendPhoto(telegram_user_ref, attach.datas, channel=channel)
+                else:
+                    channel.message_post(body="You cannot send more than 10 MB for photos.",
+                        author_id=odoobot_id, message_type="comment", subtype_xmlid="mail.mt_comment")
+            else:
+                if  attach.file_size < telegram.MAX_SIZE_DOCUMENT:
+                    telegram.sendDocument(telegram_user_ref, attach.name, attach.datas, channel=channel)
+                else:
+                    channel.message_post(body="You cannot send more than 50 MB for documents.",
+                        author_id=odoobot_id, message_type="comment", subtype_xmlid="mail.mt_comment")
+
+
+
+        ]]></field>
+    </record>
+
+        <record id="telegram_trigger_automation" model="sync.trigger.automation">
+        <field name="trigger_name">ON_MESSAGE_POSTED</field>
+        <field name="active" eval="True" />
+        <field name="sync_task_id" ref="telegram_task_odoo2tele" />
+        <field name="model_id" ref="mail.model_mail_message" />
+        <field name="trigger">on_create</field>
+        <field name="filter_pre_domain" />
+        <field name="filter_domain">[["model","=","mail.channel"]]</field>
+    </record>
+
+
+
+    <record id="send-to-everyone--sync-task" model="sync.task">
+        <field name="name">Send to everyone</field>
+        <field name="active" eval="True" />
+        <field name="project_id" ref="telegram_project" />
+        <field
+            name="code"
+        ><![CDATA[
+def handle_db(records):
+    bot_id = bot.id
+    if records.project_id.id != bot_id:
+        return
+    channel_links = env["sync.link"].search([('bot_id', '=', bot_id),('relation', '=', 'TELEGRAM_CHANNEL')])
+    if not channel_links:
+        return
+    external_user_refs = [channel.external for channel in channel_links]
+
+    for user_ref in external_user_refs:
+        send_telegram_message(user_ref, records.msg)
+
+def send_telegram_message(external_user_ref, message):
+  telegram.sendMessage(external_user_ref, message)
+]]></field>
+    </record>
+    <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">
+        <field name="trigger_name">SEND_TO_EVERYONE</field>
+        <field name="active" eval="True" />
+        <field name="sync_task_id" ref="send-to-everyone--sync-task" />
+        <field name="model_id" ref="sync.model_send_to_everyone" />
+        <field name="trigger">on_create</field>
     </record>
 </odoo>

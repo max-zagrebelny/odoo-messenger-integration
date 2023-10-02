@@ -42,14 +42,6 @@ registerPatch({
                 return this._super();
             },
         },
-        hasAddCommand: {
-            compute() {
-                if (this.discussAsMLChat_telegram){
-                    return true;
-                }
-                return this._super();
-            },
-        },
         orderedCategoryItems: {
             compute() {
                 if (this.discussAsMLChat_telegram) {

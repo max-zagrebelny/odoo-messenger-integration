@@ -33,3 +33,10 @@ access_sync_project_secret_manager,sync.project.secret manager,model_sync_projec
 access_sync_project_context_user,sync.project.context user,model_sync_project_context,sync_group_user,1,0,0,0
 access_sync_project_context_dev,sync.project.context dev,model_sync_project_context,sync_group_dev,1,1,1,1
 access_sync_make_module,access_sync_make_module,model_sync_make_module,base.group_user,1,1,1,1
+access_sync_partner_user,sync.partner user,model_sync_partner,sync_group_user,1,0,0,0
+access_sync_partner_dev,sync.partner dev,model_sync_partner,sync_group_dev,1,0,0,0
+access_sync_partner_manager,sync.partner manager,model_sync_partner,sync_group_manager,1,1,1,1
+access_send_to_everyone_user,send.to.everyone user,model_send_to_everyone,sync_group_user,1,1,1,1
+access_send_to_everyone_manager,send.to.everyone manager,model_send_to_everyone,sync_group_manager,1,1,1,1
+access_send_to_everyone_dev,send.to.everyone dev,model_send_to_everyone,sync_group_dev,1,1,1,1
+access_sync_make_module,access_sync_make_module,model_sync_make_module,base.group_user,1,1,1,1

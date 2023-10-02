@@ -15,7 +15,6 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
     log = eval_context["log"]
 
     def get_channel(relation, ref, channel_name, partner_ids, bot_id):
-        print('-------------partner_ids = ',partner_ids)
         links = get_link(relation, ref, bot_id)
         is_new = False
         if not links:
