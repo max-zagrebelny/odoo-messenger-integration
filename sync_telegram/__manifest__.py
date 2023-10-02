@@ -16,14 +16,13 @@
     "depends": ["sync", "multi_livechat", "crm"],
     "external_dependencies": {"python": ["pyTelegramBotAPI"], "bin": []},
     "data": [
-        "data/sync_project_context_data.xml",
-        "data/sync_project_data.xml",
-        "data/mail_sync_project_data.xml",
+        "data/sync_project_data.xml"
     ],
     "assets": {
         "web.assets_backend": [
             "sync_telegram/static/src/models/discuss.js",
             "sync_telegram/static/src/models/discuss_sidebar_category.js",
+            "sync_telegram/static/src/models/discuss_sidebar_category_item.js"
         ],
     },
     "demo": [],

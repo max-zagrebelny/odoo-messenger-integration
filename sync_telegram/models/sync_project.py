@@ -92,12 +92,16 @@ class SyncProjectTelegram(models.Model):
                     raise
 
         @LogExternalQuery("Telegram->addKeyBoard", eval_context)
-        def addKeyBoard(name_buttons:list):
+        def addKeyBoard(name_buttons: list):
             markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
             for name in name_buttons:
                 item = telebot.types.KeyboardButton(name)
                 markup.add(item)
             return markup
+
+        @LogExternalQuery("Telegram->delKeyBoard", eval_context)
+        def delKeyBoard():
+            return telebot.types.ReplyKeyboardRemove()
 
         @LogExternalQuery("Telegram->sendPhoto", eval_context)
         def sendPhoto(chat_id, datas, *args, **kwargs):
@@ -168,7 +172,8 @@ class SyncProjectTelegram(models.Model):
 
         telegram = AttrDict(
             {
-                "addKeyBoard":addKeyBoard,
+                "addKeyBoard": addKeyBoard,
+                "delKeyBoard": delKeyBoard,
                 "sendMessage": sendMessage,
                 "sendPhoto": sendPhoto,
                 "sendDocument": sendDocument,

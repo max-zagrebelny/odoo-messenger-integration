@@ -2,7 +2,6 @@
 
 from . import sync_project
 from . import sync_project_context
-from . import sync_project_demo
 from . import sync_task
 from . import sync_trigger_mixin
 from . import sync_trigger_cron
@@ -15,3 +14,5 @@ from . import ir_actions
 from . import ir_attachment
 from . import sync_link
 from . import base
+from . import sync_partner
+from . import send_to_everyone

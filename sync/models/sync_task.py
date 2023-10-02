@@ -144,6 +144,7 @@ class SyncTask(models.Model):
         print("queue_job_or_result = ", queue_job_or_result)
         print(self.env.context.get("test_queue_job_no_delay"))
         if with_delay and not self.env.context.get("test_queue_job_no_delay"):
+            # збереження queue_job в sync_job
             job.queue_job_id = queue_job_or_result.db_record()
             return job
         else:

@@ -10,7 +10,7 @@
         <field name="name">Viber Integration</field>
         <field
             name="eval_context_ids"
-            eval="[(4, ref('sync_project_context_viber'))]"
+            eval="ref('sync_project_context_viber')"
         />
         <field
             name="common_code"
