@@ -14,6 +14,7 @@
                 <field name="ref2" />
                 <field name="model" />
                 <field name="date" />
+                <field name="bot_name" />
             </tree>
         </field>
     </record>
@@ -32,6 +33,7 @@
                             <field name="ref2" />
                             <field name="model" />
                             <field name="date" />
+                            <field name="bot_name" />
                         </group>
                     </group>
                 </sheet>

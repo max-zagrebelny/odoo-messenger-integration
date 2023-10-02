@@ -115,20 +115,20 @@ VIBER_THREAD="VIBER_THREAD"
           "comment": str(err),
         }
     return {
-      "name": data["name"],
+      "name": data["name"] +  "[" + params.BOT_NAME + "]",
       "lang": get_lang(env, data.get("language", "").replace("-", "_")).code,
       "image_1920": url2base64(data.get("avatar")),
       "comment": str(data),
     }
   partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
-  partner, is_new_partner = multi_livechat.get_partner(VIBER_PARTNER, viber_user_ref, partner_vals, partner_kwargs)
+  partner, is_new_partner = multi_livechat.get_partner(VIBER_PARTNER, viber_user_ref, partner_vals, partner_kwargs, params.BOT_NAME)
 
   if params.WEBHOOK_CHAT != "no":
     channel_name = partner.name
     operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
     operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
     partner_ids = [partner.id] + operators_partner_ids
-    channel, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids)
+    channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, params.BOT_NAME)
 
     if params.CHAT_MODEL != "res.partner":
       def thread_vals(partner):
@@ -137,7 +137,7 @@ VIBER_THREAD="VIBER_THREAD"
         }
       thread_kwargs = dict(partner=partner)
       record_message = """<b><a href="{channel_url}">Chat with partner is created.</a></b>""".format(
-        channel_url=multi_livechat.get_channel_url(channel)
+        channel_url=multi_livechat.get_channel_url(channels[0])
       )
       thread, is_new_thread = multi_livechat.get_thread(
         "%s:%s" % (VIBER_THREAD, params.CHAT_MODEL),
@@ -146,9 +146,10 @@ VIBER_THREAD="VIBER_THREAD"
         thread_kwargs,
         params.CHAT_MODEL,
         record_message,
+        params.BOT_NAME
       )
       if is_new_thread:
-        multi_livechat.message_post(channel,
+        multi_livechat.message_post(channels[0],
         """<b><a href="{record_url}">Record is created. </a></b>""".format(
           record_url=multi_livechat.get_record_url(thread)
           ))
@@ -158,14 +159,16 @@ VIBER_THREAD="VIBER_THREAD"
       log("vrequest.message=%s" % vrequest.message)
       if data['message']['type'] == 'text':
         odoo_message_text = vrequest.message.text
-        message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
+        for channel in channels:
+          message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
 
       elif data['message']['type'] in ('picture', 'video', 'document'):
         bin_data = url2bin(vrequest.message.media)
         file_name = data['message']['file_name']
         log("file_name=%s bin_data=%s" % (file_name, bin_data))
         # TODO: use message_post
-        channel.message_post(body="", author_id=partner.id,
+        for channel in channels:
+          channel.message_post(body="", author_id=partner.id,
             message_type="comment", subtype_xmlid="mail.mt_comment", attachments=[[file_name, bin_data]])
 
     elif isinstance(vrequest, viber_requests.ViberDeliveredRequest):
@@ -209,16 +212,15 @@ def handle_db(records):
 
 def process_message(message):
     channel = env["mail.channel"].browse(message.res_id)
-    if channel.channel_type != 'multi_livechat_viber':
-        return
 
-    channel_link = channel.search_links(VIBER_CHANNEL)
+
+    channel_link = channel.search_links(VIBER_CHANNEL, params.BOT_NAME)
     if not channel_link:
         return
 
     external_user_ref = channel_link.external
 
-    if message.author_id.search_links(VIBER_PARTNER) or message.author_id.id == multi_livechat.odoobot_id:
+    if message.author_id.search_links(VIBER_PARTNER, params.BOT_NAME) or message.author_id.id == multi_livechat.odoobot_id:
         # this message is from partner or odoo bot
         return
 
@@ -259,7 +261,6 @@ def send_viber_photo(external_user_ref, media):
 
 def send_viber_file(external_user_ref, media, size, file_name):
     viber_api.send_messages(external_user_ref, [viber_messages.FileMessage(media=media, size=size, file_name=file_name)])
-
 ]]></field>
     </record>
     <record id="on-message-posted--db-trigger" model="sync.trigger.automation">
