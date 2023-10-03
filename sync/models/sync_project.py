@@ -235,7 +235,7 @@ class SyncProject(models.Model):
         params = AttrDict()
         for p in self.param_ids:
             params[p.key] = p.value
-        print('params =',params)
+        print('params =', params)
         params['BOT_NAME'] = self.name
 
         texts = AttrDict()
@@ -346,7 +346,7 @@ class SyncProject(models.Model):
                 secrets[p.key] = p.value
             eval_context_frozen = frozendict(eval_context)
             secrets = AttrDict()
-            secrets['TELEGRAM_BOT_TOKEN'] = self.token
+            secrets['VIBER_BOT_TOKEN'] = self.token
             print("secrets = ", secrets)
             print("self.eval_context_ids = ",self.eval_context_ids)
             for ec in self.eval_context_ids:

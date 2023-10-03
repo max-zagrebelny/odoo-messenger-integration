@@ -14,9 +14,159 @@
         />
         <field
             name="common_code"
-        ><![CDATA[VIBER_PARTNER="VIBER_PARTNER"
+        ><![CDATA[
+
+VIBER_PARTNER="VIBER_PARTNER"
 VIBER_CHANNEL="VIBER_CHANNEL"
 VIBER_THREAD="VIBER_THREAD"
+
+start = {
+            "Type": "keyboard",
+            "Buttons" : [{
+                "Columns": 3,
+                "Rows": 1,
+                "BgColor": "#91f2dc",
+                "ActionType": "reply",
+                "Text": "Почати"
+            }]
+}
+keyboard_start = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=start, min_api_version=7)
+
+keyboard = {
+            "Type": "keyboard",
+            "Buttons" : [{
+                "Columns": 3,
+                "Rows": 1,
+                "BgColor": "#91f2dc",
+                "ActionType": "reply",
+                "ActionBody": "/talk_with_operator",
+                "Text": "Зв'язатись з оператором"
+            }]
+
+}
+
+email = {
+          	    "Columns": 3,
+                "Rows": 1,
+                "BgColor": "#91f2dc",
+                "ActionType": "reply",
+                "ActionBody": "/user_data",
+                "Text": "Вказати електронну адресу"
+          	}
+
+phone = {
+        "Columns": 3,
+        "Rows": 1,
+        "BgColor": "#91f2dc",
+        "Text": "Поділитись номером телефону",
+        "ActionBody": "Поділитись номером телефону",
+        "ActionType": "share-phone",
+}
+
+notification = {
+      "Type":"rich_media",
+      "ButtonsGroupColumns":6,
+      "ButtonsGroupRows":7,
+      "BgColor":"#FFFFFF",
+      "Buttons":[
+         {
+            "Columns":6,
+            "Rows":3,
+            "ActionType":"open-url",
+            "ActionBody":"https://www.google.com",
+            "Image":"https://cdn.dribbble.com/users/48309/screenshots/16437054/media/cb92186b82222cbaa31a80aadd7c361f.png?resize=400x300&vertical=center"
+         },
+         {
+            "Columns":6,
+            "Rows":2,
+            "Text":"<font color=#323232><b>Headphones with Microphone, On-ear Wired earphones</b></font><font color=#777777><br>Sound Intone </font><font color=#6fc133>$17.99</font>",
+            "ActionType":"open-url",
+            "ActionBody":"https://www.google.com",
+            "TextSize":"medium",
+            "TextVAlign":"middle",
+            "TextHAlign":"left"
+         },
+         {
+            "Columns":6,
+            "Rows":1,
+            "ActionType":"reply",
+            "ActionBody":"https://www.google.com",
+            "Text":"<font color=#ffffff>Buy</font>",
+            "TextSize":"large",
+            "BgColor": "#1bcf54",
+            "TextVAlign":"middle",
+            "TextHAlign":"middle",
+            "Image":"https://s14.postimg.org/4mmt4rw1t/Button.png"
+         },
+         {
+            "Columns":6,
+            "Rows":1,
+            "ActionType":"reply",
+            "ActionBody":"https://www.google.com",
+            "Text":"<font color=#8367db>MORE DETAILS</font>",
+            "TextSize":"small",
+            "TextVAlign":"middle",
+            "TextHAlign":"middle"
+         },
+         {
+            "Columns":6,
+            "Rows":3,
+            "ActionType":"open-url",
+            "ActionBody":"https://www.google.com",
+            "Image":"https://cdn.dribbble.com/users/48309/screenshots/16437054/media/c407e8c1d5fedacfca535b008b66202d.png?resize=400x300&vertical=center"
+         },
+         {
+            "Columns":6,
+            "Rows":2,
+            "Text":"<font color=#323232><b>Hanes Men's Humor Graphic T-Shirt</b></font><font color=#777777><br>Hanes</font><font color=#6fc133>$10.99</font>",
+            "ActionType":"open-url",
+            "ActionBody":"https://www.google.com",
+            "TextSize":"medium",
+            "TextVAlign":"middle",
+            "TextHAlign":"left"
+         },
+         {
+            "Columns":6,
+            "Rows":1,
+            "ActionType":"reply",
+            "ActionBody":"https://www.google.com",
+            "Text":"<font color=#ffffff>Buy</font>",
+            "BgColor": "#1bcf54",
+            "TextSize":"large",
+            "TextVAlign":"middle",
+            "TextHAlign":"middle",
+         },
+         {
+            "Columns":6,
+            "Rows":1,
+            "ActionType":"reply",
+            "ActionBody":"https://www.google.com",
+            "Text":"<font color=#8367db>MORE DETAILS</font>",
+            "TextSize":"small",
+            "TextVAlign":"middle",
+            "TextHAlign":"middle"
+         }
+      ]
+}
+rich_media = viber_messages.RichMediaMessage(rich_media=notification, min_api_version=6)
+keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
+
+def validate_email(email, partner, viber_user_ref):
+  email = email.replace("/email", "", 1).strip()
+
+  if valid.match(r"[^@]+@[^@]+\.[^@]+", email):
+    partner.write({"email" : email})
+    check_partner(partner)
+    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Дякую, дані збрежено."), keyboard_message])
+  else:
+    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Неправильно вказана пошта, повторіть спробу."), keyboard_message])
+
+def check_partner(partner):
+  if not partner.email:
+    keyboard["Buttons"].append(email)
+  if not partner.phone:
+    keyboard["Buttons"].append(phone)
+  keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
 ]]></field>
     </record>
     <record id="viber-bot-token--project-secret-parameter" model="sync.project.secret">
@@ -102,8 +252,14 @@ VIBER_THREAD="VIBER_THREAD"
     return "no, thanks", 403
 
   viber_user_ref, vrequest = viber_webhook_parse(httprequest)
+  log("Message type: %s" % vrequest , LOG_DEBUG)
 
   if not viber_user_ref:
+    return
+
+  if isinstance(vrequest, viber_requests.ViberConversationStartedRequest):
+    start_text = f"Вітаю, я {params.BOT_NAME}. Ми дуже щасливі бачити Вас в списку наших партнерів :). Щоб почати роботу з ботом введіть команду /start."
+    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=start_text)])
     return
 
   def partner_vals(viber_api, viber_user_ref):
@@ -120,47 +276,69 @@ VIBER_THREAD="VIBER_THREAD"
       "image_1920": url2base64(data.get("avatar")),
       "comment": str(data),
     }
-  partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
-  partner, is_new_partner = multi_livechat.get_partner(VIBER_PARTNER, viber_user_ref, partner_vals, partner_kwargs, params.BOT_NAME)
+  if isinstance(vrequest, viber_requests.ViberMessageRequest):
+    partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
+    bot_id = bot.id
+    partner, is_new_partner = multi_livechat.get_partner(VIBER_PARTNER, viber_user_ref, bot_id, partner_vals, partner_kwargs)
 
-  if params.WEBHOOK_CHAT != "no":
-    channel_name = partner.name
-    operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
-    operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
-    partner_ids = [partner.id] + operators_partner_ids
-    channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, params.BOT_NAME)
+    vals = partner_vals(**partner_kwargs)
+    avatar = vals["image_1920"]
+    if params.WEBHOOK_CHAT != "no":
+      channel_name = partner.name
+      operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
+      operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
+      partner_ids = [partner.id] + operators_partner_ids
+      channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, bot_id)
 
-    if params.CHAT_MODEL != "res.partner":
-      def thread_vals(partner):
-        return {
-          "name": partner.name,
-        }
-      thread_kwargs = dict(partner=partner)
-      record_message = """<b><a href="{channel_url}">Chat with partner is created.</a></b>""".format(
-        channel_url=multi_livechat.get_channel_url(channels[0])
-      )
-      thread, is_new_thread = multi_livechat.get_thread(
-        "%s:%s" % (VIBER_THREAD, params.CHAT_MODEL),
-        viber_user_ref,
-        thread_vals,
-        thread_kwargs,
-        params.CHAT_MODEL,
-        record_message,
-        params.BOT_NAME
-      )
-      if is_new_thread:
-        multi_livechat.message_post(channels[0],
-        """<b><a href="{record_url}">Record is created. </a></b>""".format(
-          record_url=multi_livechat.get_record_url(thread)
-          ))
+      if params.CHAT_MODEL != "res.partner":
+        def thread_vals(partner):
+          return {
+            "name": partner.name,
+          }
+        thread_kwargs = dict(partner=partner)
+        record_message = """<b><a href="{channel_url}">Chat with partner is created.</a></b>""".format(
+          channel_url=multi_livechat.get_channel_url(channels[0])
+        )
+        thread, is_new_thread = multi_livechat.get_thread(
+          "%s:%s" % (VIBER_THREAD, params.CHAT_MODEL),
+          viber_user_ref,
+          thread_vals,
+          thread_kwargs,
+          params.CHAT_MODEL,
+          record_message,
+          bot_id
+        )
+        if is_new_thread:
+          multi_livechat.message_post(channels[0],
+          """<b><a href="{record_url}">Record is created. </a></b>""".format(
+            record_url=multi_livechat.get_record_url(thread)
+            ))
 
-    odoo_message_text = None
-    if isinstance(vrequest, viber_requests.ViberMessageRequest):
-      log("vrequest.message=%s" % vrequest.message)
-      if data['message']['type'] == 'text':
-        odoo_message_text = vrequest.message.text
-        for channel in channels:
-          message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
+      odoo_message_text = None
+
+      if data['message']['type'] == 'contact':
+        partner.write({"phone": vrequest.message.contact.phone_number})
+        check_partner(partner)
+        viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Дякую, дані збрежено."), keyboard_message])
+
+      elif data['message']['type'] == 'text':
+
+        if vrequest.message.text == "/user_data":
+          check_partner(partner)
+          email_text = "Напишіть вашу електронну адресу з командою /email. Наприклад, /email max@gmail.com."
+          viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=email_text), keyboard_message])
+
+        elif "/email" in vrequest.message.text:
+          validate_email(vrequest.message.text, partner, viber_user_ref)
+
+        elif vrequest.message.text == "/start":
+          check_partner(partner)
+          email_text = "Будь ласка, представте деякі особисті дані для продовження"
+          viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=email_text), keyboard_message])
+        else:
+          odoo_message_text = vrequest.message.text
+          for channel in channels:
+            message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
 
       elif data['message']['type'] in ('picture', 'video', 'document'):
         bin_data = url2bin(vrequest.message.media)
@@ -171,14 +349,14 @@ VIBER_THREAD="VIBER_THREAD"
           channel.message_post(body="", author_id=partner.id,
             message_type="comment", subtype_xmlid="mail.mt_comment", attachments=[[file_name, bin_data]])
 
-    elif isinstance(vrequest, viber_requests.ViberDeliveredRequest):
-      # TODO
-      pass
-    elif isinstance(vrequest, viber_requests.ViberSeenRequest):
-      # TODO
-      pass
-    else:
-      odoo_message_text = str(data)
+  elif isinstance(vrequest, viber_requests.ViberDeliveredRequest):
+    # TODO
+    pass
+  elif isinstance(vrequest, viber_requests.ViberSeenRequest):
+    # TODO
+    pass
+  else:
+    odoo_message_text = str(data)
     log("type=%s" % type2str(vrequest))
 
 
@@ -190,7 +368,6 @@ def message_post(is_new, *args, **kwargs):
       add_job('message_post')(*args, **kwargs)
     else:
       multi_livechat.message_post(*args, **kwargs)
-
 ]]></field>
     </record>
     <record id="viber--webhook-trigger" model="sync.trigger.webhook">
@@ -199,6 +376,7 @@ def message_post(is_new, *args, **kwargs):
         <field name="sync_task_id" ref="process-viber-events--sync-task" />
         <field name="webhook_type">json</field>
     </record>
+
     <record id="send-response-via-odoo--sync-task" model="sync.task">
         <field name="name">Send Response via Odoo</field>
         <field name="active" eval="True" />
@@ -213,14 +391,16 @@ def handle_db(records):
 def process_message(message):
     channel = env["mail.channel"].browse(message.res_id)
 
-
-    channel_link = channel.search_links(VIBER_CHANNEL, params.BOT_NAME)
+    bot_id = bot.id
+    channel_link = channel.search_links(VIBER_CHANNEL, bot_id)
     if not channel_link:
         return
 
     external_user_ref = channel_link.external
+    partner,is_new = multi_livechat.get_partner(VIBER_PARTNER, external_user_ref, None, None, bot_id)
+    check_partner(partner)
 
-    if message.author_id.search_links(VIBER_PARTNER, params.BOT_NAME) or message.author_id.id == multi_livechat.odoobot_id:
+    if message.author_id.search_links(VIBER_PARTNER, bot_id) or message.author_id.id == multi_livechat.odoobot_id:
         # this message is from partner or odoo bot
         return
 
@@ -254,13 +434,21 @@ def process_message(message):
                     author_id=multi_livechat.odoobot_id, message_type="comment", subtype_xmlid="mail.mt_comment")
 
 def send_viber_message(external_user_ref, text):
-    viber_api.send_messages(external_user_ref, [viber_messages.TextMessage(text=text)])
+  viber_api.send_messages(external_user_ref, [viber_messages.TextMessage(text=text), keyboard_message])
 
 def send_viber_photo(external_user_ref, media):
-    viber_api.send_messages(external_user_ref, [viber_messages.PictureMessage(media=media)])
+    viber_api.send_messages(external_user_ref, [viber_messages.PictureMessage(media=media), keyboard_message])
 
 def send_viber_file(external_user_ref, media, size, file_name):
-    viber_api.send_messages(external_user_ref, [viber_messages.FileMessage(media=media, size=size, file_name=file_name)])
+    viber_api.send_messages(external_user_ref, [viber_messages.FileMessage(media=media, size=size, file_name=file_name), keyboard_message])
+
+def check_partner(partner):
+  if not partner.email:
+    keyboard["Buttons"].append(email)
+  if not partner.phone:
+    keyboard["Buttons"].append(phone)
+  keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
+
 ]]></field>
     </record>
     <record id="on-message-posted--db-trigger" model="sync.trigger.automation">
@@ -271,5 +459,43 @@ def send_viber_file(external_user_ref, media, size, file_name):
         <field name="trigger">on_create</field>
         <field name="filter_pre_domain" />
         <field name="filter_domain">[["model","=","mail.channel"]]</field>
+    </record>
+
+    <record id="send-to-everyone--sync-task" model="sync.task">
+        <field name="name">Send to everyone</field>
+        <field name="active" eval="True" />
+        <field name="project_id" ref="viber-integration--sync-project" />
+        <field
+            name="code"
+        ><![CDATA[
+def handle_db(records):
+  if records.project_id.id != project_id:
+    return
+  channel_links = env["sync.link"].search([('bot_id', '=', bot.id),('relation', '=', 'VIBER_CHANNEL')])
+  if not channel_links:
+      return
+  external_user_refs = [channel.external for channel in channel_links]
+  message = [keyboard_message]
+
+
+  if records.rich_media:
+    message.insert(0, rich_media)
+
+  if records.msg:
+    message.insert(1, viber_messages.TextMessage(text=records.msg))
+
+  for user_ref in external_user_refs:
+    send_viber_message(user_ref, message)
+
+def send_viber_message(external_user_ref, message):
+  viber_api.send_messages(external_user_ref, message)
+]]></field>
+    </record>
+    <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">
+        <field name="trigger_name">SEND_TO_EVERYONE</field>
+        <field name="active" eval="True" />
+        <field name="sync_task_id" ref="send-to-everyone--sync-task" />
+        <field name="model_id" ref="sync.model_send_to_everyone" />
+        <field name="trigger">on_create</field>
     </record>
 </odoo>

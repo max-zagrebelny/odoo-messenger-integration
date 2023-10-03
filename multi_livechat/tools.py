@@ -53,15 +53,15 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
         return link.odoo, is_new
 
     def get_thread(
-        relation, ref, callback_vals, callback_kwargs, model, record_message, bot_name
+        relation, ref, callback_vals, callback_kwargs, model, record_message, bot_id
     ):
-        link = get_link(relation, ref, bot_name)
+        link = get_link(relation, ref, bot_id)
         is_new = False
         if not link:
             is_new = True
             vals = callback_vals(**callback_kwargs)
             record = env[model].sudo().create(vals)
-            link = record.set_link(relation, ref, bot_name)
+            link = record.set_link(relation, ref, bot_id)
 
             if record_message:
                 record.message_post(
@@ -98,7 +98,7 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
 
     return {
         "get_channel": get_channel,
-        #"get_partner": get_partner,
+        "get_partner": get_partner,
         "get_thread": get_thread,
         "get_record_url": get_record_url,
         "get_channel_url": get_channel_url,
