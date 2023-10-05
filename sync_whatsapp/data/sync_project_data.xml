@@ -1,44 +1,68 @@
 <?xml version='1.0' encoding='UTF-8' ?>
-<!-- Copyright 2021 Eugene Molotov <https://github.com/em230418>
-     Copyright 2022 Ivan Yelizariev <https://twitter.com/yelizariev>
-     License MIT (https://opensource.org/licenses/MIT). -->
 <odoo>
-    <record id="sync_project_context_whatsapp_chatapi" model="sync.project.context">
-        <field name="name">whatsapp_chatapi</field>
-        <field name="display_name">WhatsApp (Chat API)</field>
+    <record id="sync_project_context_whatsapp_twilio" model="sync.project.context">
+        <field name="name">whatsapp_twilio</field>
+        <field name="display_name">WhatsApp (Twilio)</field>
     </record>
-    <record id="whatsapp-chatapi-integration--sync-project" model="sync.project">
-        <field name="name">WhatsApp (Chat API) Integration</field>
+    <record id="whatsapp-twilio-integration--sync-project" model="sync.project">
+        <field name="name">WhatsApp (Twilio) Integration</field>
         <field
             name="eval_context_ids"
-            eval="[(4, ref('sync_project_context_whatsapp_chatapi'))]"
+            eval="[(4, ref('sync_project_context_whatsapp_twilio'))]"
         />
         <field
             name="common_code"
-        ><![CDATA[WHATSAPP_CHATAPI_PARTNER="WHATSAPP_CHATAPI_PARTNER"
-WHATSAPP_CHATAPI_CHANNEL="WHATSAPP_CHATAPI_CHANNEL"
-WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
+        ><![CDATA[WHATSAPP_TWILIO_PARTNER="WHATSAPP_TWILIO_PARTNER"
+WHATSAPP_TWILIO_CHANNEL="WHATSAPP_TWILIO_CHANNEL"
+WHATSAPP_TWILIO_THREAD="WHATSAPP_TWILIO_THREAD"
+
+def validate_email(email, partner, whatsapp_user_ref):
+  email = email.replace("/email", "", 1).strip()
+
+  if valid.match(r"[^@]+@[^@]+.[^@]+", email):
+    partner.write({"email" : email})
+    whatsapp_service_api.send_message(params.BOT_NUMBER, whatsapp_user_ref, "Дякую, дані збрежено.")
+  else:
+    whatsapp_service_api.send_message(params.BOT_NUMBER, whatsapp_user_ref, "Неправильно вказана пошта, повторіть спробу.")
 ]]></field>
     </record>
     <record
-        id="whatsapp-chatapi-service-api-key--project-secret-parameter"
+        id="whatsapp-twilio-service-token--project-secret-parameter"
         model="sync.project.secret"
     >
-        <field name="key">WHATSAPP_CHATAPI_TOKEN</field>
+        <field name="key">WHATSAPP_TWILIO_TOKEN</field>
         <field name="description" />
-        <field name="url" eval="'https://app.chat-api.com/'" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="url" eval="'https://www.twilio.com/'" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
     </record>
     <record
-        id="whatsapp-chatapi-service-endpoint--project-secret-parameter"
+        id="whatsapp-twilio-service-sid--project-secret-parameter"
         model="sync.project.param"
     >
-        <field name="key">WHATSAPP_CHATAPI_API_URL</field>
-        <field name="description">E.g. https://api.chat-api.com/instance123456</field>
-        <field name="url" eval="'https://app.chat-api.com/'" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="key">WHATSAPP_TWILIO_SID</field>
+        <field name="description"/>
+        <field name="url" eval="'https://www.twilio.com/'" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
     </record>
-    <record id="chat-model--project-parameter" model="sync.project.param">
+    <record id="whatsapp-twilio-service-bot-number--project-secret-parameter" model="sync.project.param">
+        <field name="key">BOT_NUMBER</field>
+        <field name="initial_value">whatsapp:+14155238886</field>
+        <field name="description">
+            Enter your WhatsApp Twilio phone number
+        </field>
+        <field name="url" eval="'https://www.twilio.com/'" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
+    </record>
+    <record id="whatsapp-twilio-service-webhook-chat--project-secret-parameter" model="sync.project.param">
+        <field name="key">WEBHOOK_CHAT</field>
+        <field name="initial_value">yes</field>
+        <field name="description">
+            Set to "no" to disable redirecting whatsapp messages to odoo chat
+        </field>
+        <field name="url" eval="" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
+    </record>
+    <record id="whatsapp-twilio-service-chat-model--project-secret-parameter" model="sync.project.param">
         <field name="key">CHAT_MODEL</field>
         <field name="initial_value">crm.lead</field>
         <field name="description">
@@ -47,34 +71,16 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
             partner_id
         </field>
         <field name="url" eval="" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
     </record>
-    <record id="webhook-chat--project-parameter" model="sync.project.param">
-        <field name="key">WEBHOOK_CHAT</field>
-        <field name="initial_value">yes</field>
-        <field name="description">
-            Set to "no" to disable redirecting whatsapp messages to odoo chat
-        </field>
-        <field name="url" eval="" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
-    </record>
-    <record id="webhook-chat--project-parameter" model="sync.project.param">
+    <record id="whatsapp-twilio-service-bot-name--project-secret-parameter" model="sync.project.param">
         <field name="key">BOT_NAME</field>
         <field name="initial_value">Odoo</field>
         <field name="description">
-            Set to "no" to disable redirecting whatsapp messages to odoo chat
+            Enter a bot name
         </field>
         <field name="url" eval="" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
-    </record>
-    <record id="webhook-chat--project-parameter" model="sync.project.param">
-        <field name="key">BOT_NUMBER</field>
-        <field name="initial_value">whatsapp:+1 415 523 8886</field>
-        <field name="description">
-            Set to "no" to disable redirecting whatsapp messages to odoo chat
-        </field>
-        <field name="url" eval="" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
     </record>
     <record id="operator-ids--project-parameter" model="sync.project.param">
         <field name="key">OPERATOR_IDS</field>
@@ -84,12 +90,12 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
             message from new WhatsApp user
         </field>
         <field name="url" eval="" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
     </record>
     <record id="setup-webhook--sync-task" model="sync.task">
         <field name="name">Setup webook</field>
         <field name="active" eval="True" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
         <field
             name="code"
         ><![CDATA[def handle_button():
@@ -104,7 +110,7 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
     <record id="process-whatsapp-events--sync-task" model="sync.task">
         <field name="name">Process Whatsapp Events</field>
         <field name="active" eval="True" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
         <field
             name="code"
         ><![CDATA[def handle_webhook(httprequest):
@@ -126,14 +132,14 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
   # TODO: parse avatar from "profilePicThumObj"
 
   partner_kwargs = dict(message=message)
-  partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_CHATAPI_PARTNER, whatsapp_user_ref, partner_vals, partner_kwargs, params.BOT_NAME)
+  partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_TWILIO_PARTNER, whatsapp_user_ref, partner_vals, partner_kwargs, params.BOT_NAME)
 
   if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
       operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
       operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
       partner_ids = [partner.id] + operators_partner_ids
-      channels, is_new_channel = multi_livechat.get_channel(WHATSAPP_CHATAPI_CHANNEL, whatsapp_user_ref, channel_name, partner_ids, params.BOT_NAME)
+      channels, is_new_channel = multi_livechat.get_channel(WHATSAPP_TWILIO_CHANNEL, whatsapp_user_ref, channel_name, partner_ids, params.BOT_NAME)
 
       if params.CHAT_MODEL != "res.partner":
         def thread_vals(partner):
@@ -145,7 +151,7 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
           channel_url=multi_livechat.get_channel_url(channels[0])
         )
         thread, is_new_thread = multi_livechat.get_thread(
-          "%s:%s" % (WHATSAPP_CHATAPI_THREAD, params.CHAT_MODEL),
+          "%s:%s" % (WHATSAPP_TWILIO_THREAD, params.CHAT_MODEL),
           message["From"],
           thread_vals,
           thread_kwargs,
@@ -159,11 +165,30 @@ WHATSAPP_CHATAPI_THREAD="WHATSAPP_CHATAPI_THREAD"
             record_url=multi_livechat.get_record_url(thread)
             ))
 
+
+
       odoo_message_text = message["Body"]
+      odoo_media_url = message["MediaUrl0"]
 
       if odoo_message_text:
+        if odoo_message_text == "/start":
+          whatsapp_service_api.send_message(params.BOT_NUMBER, whatsapp_user_ref, "/email - вказати пошут")
+
+        elif "/email" in odoo_message_text:
+            validate_email(odoo_message_text, partner, whatsapp_user_ref)
+
+        elif odoo_message_text:
+          for channel in channels:
+            message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
+
+      if odoo_media_url:
+        bin_data = url2bin(odoo_media_url)
+        file_name = odoo_media_url.split("/")[-1]
+        log("file_name=%s bin_data=%s" % (file_name, bin_data))
+        # TODO: use message_post
         for channel in channels:
-          message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
+          channel.message_post(body="", author_id=partner.id,
+            message_type="comment", subtype_xmlid="mail.mt_comment", attachments=[[file_name, bin_data]])
 
 
 
@@ -176,9 +201,10 @@ def message_post(is_new, *args, **kwargs):
     else:
       multi_livechat.message_post(*args, **kwargs)
 
+
 ]]></field>
     </record>
-    <record id="whatsapp-chatapi--webhook-trigger" model="sync.trigger.webhook">
+    <record id="whatsapp-twilio--webhook-trigger" model="sync.trigger.webhook">
         <field name="trigger_name">WHATSAPP</field>
         <field name="active" eval="True" />
         <field name="sync_task_id" ref="process-whatsapp-events--sync-task" />
@@ -187,21 +213,18 @@ def message_post(is_new, *args, **kwargs):
     <record id="send-response-via-odoo--sync-task" model="sync.task">
         <field name="name">Send Response via Odoo</field>
         <field name="active" eval="True" />
-        <field name="project_id" ref="whatsapp-chatapi-integration--sync-project" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
         <field
             name="code"
         ><![CDATA[def send_whatsapp_message(external_user_ref, text):
     whatsapp_service_api.send_message(params.BOT_NUMBER, external_user_ref, text)
-
-def send_whatsapp_file(external_chat_ref, attachment):
-    whatsapp_service_api.send_file(external_chat_ref, attachment)
 
 def handle_db(records):
     for mail_message in records:
         process_message(mail_message)
 
 def process_message(mail_message):
-    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_CHATAPI_PARTNER, params.BOT_NAME):
+    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_TWILIO_PARTNER, params.BOT_NAME):
         log("Message from external chat. No need to send back. Ignore")
         return
 
@@ -210,7 +233,7 @@ def process_message(mail_message):
         log("channel type is not %s" % multi_livechat.channel_type, LOG_DEBUG)
         return
 
-    channel_link = channel.search_links(WHATSAPP_CHATAPI_CHANNEL, params.BOT_NAME)
+    channel_link = channel.search_links(WHATSAPP_TWILIO_CHANNEL, params.BOT_NAME)
     if not channel_link:
         log("channel link not found")
         return
@@ -225,8 +248,13 @@ def process_message(mail_message):
         add_job(send_whatsapp_message)(external_chat_ref, text)
 
     for attach in mail_message.attachment_ids:
-        log("ATTACHMENT from odoo: attach.id %s - name %s" % (attach.name, attach.id), LOG_INFO)
-        add_job(send_whatsapp_file)(external_chat_ref, attach)
+        attach_url = attach._public_url()
+        log("ATTACHMENT public url: %s" % attach_url, LOG_DEBUG)
+        if attach.mimetype:
+          send_whatsapp_file(external_user_ref, attach_url)
+
+def send_whatsapp_file(external_user_ref, media):
+    whatsapp_service_api.send_file(params.BOT_NUMBER, external_user_ref, media)
 ]]></field>
     </record>
     <record id="on-message-posted--db-trigger" model="sync.trigger.automation">

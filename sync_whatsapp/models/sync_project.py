@@ -1,19 +1,12 @@
-# Copyright 2021 Eugene Molotov <https://github.com/em230418>
-# Copyright 2022 Ivan Yelizariev <https://twitter.com/yelizariev>
-# License MIT (https://opensource.org/licenses/MIT).
-
-import json
 import logging
-
-import requests
-from requests import request as rq
 from twilio.rest import Client
 from odoo import _, api, models, http
-
-
+import re
+from odoo.tools.safe_eval import wrap_module
 from odoo.addons.multi_livechat.tools import get_multi_livechat_eval_context
 from odoo.addons.sync.models.sync_project import AttrDict
 from odoo.addons.sync.tools import LogExternalQuery
+
 
 _logger = logging.getLogger(__name__)
 
@@ -23,18 +16,18 @@ class SyncProjectWhatsApp(models.Model):
     _inherit = "sync.project.context"
 
     @api.model
-    def _eval_context_whatsapp_chatapi(self, secrets, eval_context):
+    def _eval_context_whatsapp_twilio(self, secrets, eval_context):
         """Adds whatsapp object:"""
         params = eval_context["params"]
 
-        if not params.WHATSAPP_CHATAPI_API_URL:
-            raise Exception(_("WhatsApp Chat API URL is not set"))
+        if not params.WHATSAPP_TWILIO_SID:
+            raise Exception(_("WhatsApp Twilio sid is not set"))
 
-        if not secrets.WHATSAPP_CHATAPI_TOKEN:
-            raise Exception(_("WhatsApp Chat API token is not set"))
+        if not secrets.WHATSAPP_TWILIO_TOKEN:
+            raise Exception(_("WhatsApp Twilio token is not set"))
 
-        account_sid = params.WHATSAPP_CHATAPI_API_URL
-        auth_token = secrets.WHATSAPP_CHATAPI_TOKEN
+        account_sid = params.WHATSAPP_TWILIO_SID
+        auth_token = secrets.WHATSAPP_TWILIO_TOKEN
         client = Client(account_sid, auth_token)
 
         # Створення вебхука
@@ -71,6 +64,15 @@ class SyncProjectWhatsApp(models.Model):
             )
             return message.sid
 
+        @LogExternalQuery("WhatsApp->send_file", eval_context)
+        def send_file(from_user, to, media_url):
+            message = client.messages.create(
+                media_url=media_url,
+                from_=from_user,
+                to=to
+            )
+            return message.sid
+
         multi_livechat_context = AttrDict(
             get_multi_livechat_eval_context(
                 self.env, "multi_livechat_whatsapp", eval_context
@@ -85,7 +87,7 @@ class SyncProjectWhatsApp(models.Model):
             {
                 # "set_webhook": set_webhook,
                 "send_message": send_message,
-                # "send_file": send_file,
+                "send_file": send_file,
             }
         )
 
@@ -93,4 +95,9 @@ class SyncProjectWhatsApp(models.Model):
             "whatsapp_service_api": whatsapp_service_api,
             "whatsapp_webhook_parse": whatsapp_webhook_parse,
             "multi_livechat": multi_livechat_context,
+            "valid": wrap_module(
+                re, [
+                    "match"
+                ],
+            ),
         }

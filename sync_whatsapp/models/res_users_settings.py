@@ -1,4 +1,3 @@
-# Copyright 2022 Ivan Yelizariev <https://twitter.com/yelizariev>
 from odoo import fields, models
 
 
