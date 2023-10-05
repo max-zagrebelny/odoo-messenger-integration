@@ -44,7 +44,7 @@ class SyncProjectViber(models.Model):
 
         - multi_livechat.*
         """
-
+        params = eval_context["params"]
         if not secrets.VIBER_BOT_TOKEN:
             raise Exception(_("Viber bot token is not set"))
 

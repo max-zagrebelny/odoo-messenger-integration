@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 <odoo>
     <record id="sync_project_context_whatsapp_twilio" model="sync.project.context">
-        <field name="name">whatsapp_twilio</field>
+        <field name="name">whatsapp</field>
         <field name="display_name">WhatsApp (Twilio)</field>
     </record>
     <record id="whatsapp-twilio-integration--sync-project" model="sync.project">
@@ -266,4 +266,43 @@ def send_whatsapp_file(external_user_ref, media):
         <field name="filter_pre_domain" />
         <field name="filter_domain">[["model","=","mail.channel"]]</field>
     </record>
+
+    <record id="send-to-everyone--sync-task" model="sync.task">
+        <field name="name">Send to everyone</field>
+        <field name="active" eval="True" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
+        <field
+            name="code"
+        ><![CDATA[
+def handle_db(records):
+  if records.project_id.id != project_id:
+    return
+  channel_links = env["sync.link"].search([('bot_id', '=', bot.id),('relation', '=', 'VIBER_CHANNEL')])
+  if not channel_links:
+      return
+  external_user_refs = [channel.external for channel in channel_links]
+  message = [keyboard_message]
+
+
+  if records.rich_media:
+    message.insert(0, rich_media)
+
+  if records.msg:
+    message.insert(1, viber_messages.TextMessage(text=records.msg))
+
+  for user_ref in external_user_refs:
+    send_viber_message(user_ref, message)
+
+def send_viber_message(external_user_ref, message):
+  viber_api.send_messages(external_user_ref, message)
+]]></field>
+    </record>
+    <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">
+        <field name="trigger_name">SEND_TO_EVERYONE</field>
+        <field name="active" eval="True" />
+        <field name="sync_task_id" ref="send-to-everyone--sync-task" />
+        <field name="model_id" ref="sync.model_send_to_everyone" />
+        <field name="trigger">on_create</field>
+    </record>
 </odoo>
+

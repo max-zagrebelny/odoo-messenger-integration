@@ -14,8 +14,8 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
     odoobot_id = env.user.browse(SUPERUSER_ID).partner_id.id
     log = eval_context["log"]
 
-    def get_channel(relation, ref, channel_name, partner_ids, bot_name):
-        links = get_link(relation, ref, bot_name)
+    def get_channel(relation, ref, channel_name, partner_ids, bot_id):
+        links = get_link(relation, ref, bot_id)
         is_new = False
         if not links:
             is_new = True
@@ -23,7 +23,7 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
                 channel_type, channel_name, partner_ids
             )
             channel = env["mail.channel"].with_context(mail_create_nosubscribe=True).sudo().create(vals)
-            links = [channel.set_link(relation, ref, bot_name)]
+            links = [channel.set_link(relation, ref, bot_id)]
             log("Channel created: %s" % channel)
         return [link.odoo for link in links], is_new
 
@@ -40,28 +40,28 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
     #         log("Channel created: %s" % channel)
     #     return link.odoo, is_new
 
-    def get_partner(relation, ref, callback_vals, callback_kwargs, bot_name):
-        link = get_link(relation, ref, bot_name)
+    def get_partner(relation, ref, bot_id, callback_vals, callback_kwargs):
+        link = get_link(relation, ref, bot_id)
         is_new = False
         if not link:
             is_new = True
             vals = callback_vals(**callback_kwargs)
-            print(f"user vals name: {vals['name']} comment: {vals['comment']} ")
+            print(f"user vals name: {vals['name']}")
             partner = env["res.partner"].sudo().create(vals)
-            link = partner.set_link(relation, ref, bot_name)
+            link = partner.set_link(relation, ref, bot_id)
             log("Partner created: %s" % partner)
         return link.odoo, is_new
 
     def get_thread(
-        relation, ref, callback_vals, callback_kwargs, model, record_message, bot_name
+        relation, ref, callback_vals, callback_kwargs, model, record_message, bot_id
     ):
-        link = get_link(relation, ref, bot_name)
+        link = get_link(relation, ref, bot_id)
         is_new = False
         if not link:
             is_new = True
             vals = callback_vals(**callback_kwargs)
             record = env[model].sudo().create(vals)
-            link = record.set_link(relation, ref, bot_name)
+            link = record.set_link(relation, ref, bot_id)
 
             if record_message:
                 record.message_post(

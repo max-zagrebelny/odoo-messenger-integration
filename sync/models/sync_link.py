@@ -35,7 +35,7 @@ class SyncLink(models.Model):
     model = fields.Char("Odoo Model", index=True)
 
     # delete_my_code_new
-    bot_name = fields.Char("Bot name")
+    bot_id = fields.Many2one('sync.project', ondelete='cascade')
 
     def _auto_init(self):
         res = super(SyncLink, self)._auto_init()
@@ -62,7 +62,6 @@ class SyncLink(models.Model):
         '''references to vals for creating model'''
         # delete_my_code
         print('- sync.link refs2vals')
-        print('external_refs =',external_refs)
         external_refs = sorted(
             external_refs.items(), key=lambda code_value: code_value[0]
         )
@@ -87,7 +86,7 @@ class SyncLink(models.Model):
     # delete_my_code_new
     @api.model
     def _set_link_external(
-            self, relation, external_refs, bot_name, sync_date=None, allow_many2many=False, model=None
+            self, relation, external_refs, bot_id, sync_date=None, allow_many2many=False, model=None
     ):
         # delete_my_code
         print('- sync.link _set_link_external')
@@ -100,7 +99,7 @@ class SyncLink(models.Model):
         vals = self.refs2vals(external_refs)
         # Check for existing records
         if allow_many2many:
-            existing = self._search_links_external(relation, external_refs,bot_name)
+            existing = self._search_links_external(relation, external_refs, bot_id)
         else:
             # check existing links for a part of external_refs
             refs1 = external_refs.copy()
@@ -113,8 +112,8 @@ class SyncLink(models.Model):
             print('refs1 =', refs1)
             print('refs2 =', refs2)
             existing = self._search_links_external(
-                relation, refs1, bot_name
-            ) or self._search_links_external(relation, refs2, bot_name)
+                relation, refs1, bot_id
+            ) or self._search_links_external(relation, refs2, bot_id)
             print('existing =', existing)
             if existing and not (
                     existing.ref1 == vals["ref1"] and existing.ref2 == vals["ref2"]
@@ -140,7 +139,7 @@ class SyncLink(models.Model):
         vals["relation"] = relation
         if model:
             vals["model"] = model
-        vals["bot_name"] = bot_name
+        vals['bot_id'] = bot_id
         self._log("Create link: %s" % vals)
         print('vals =', vals)
         return self.create(vals)
@@ -206,8 +205,8 @@ class SyncLink(models.Model):
 
     # delete_my_code_new
     @api.model
-    def _get_link_external(self, relation, external_refs, bot_name, model=None):
-        links = self._search_links_external(relation, external_refs, bot_name, model=model)
+    def _get_link_external(self, relation, external_refs, bot_id, model=None):
+        links = self._search_links_external(relation, external_refs, bot_id, model=model)
         # if len(links) > 1:
         #     raise ValidationError(
         #         _(
@@ -232,7 +231,7 @@ class SyncLink(models.Model):
     # delete_my_code_new
     @api.model
     def _search_links_external(
-            self, relation, external_refs, bot_name, model=None, make_logs=False
+            self, relation, external_refs, bot_id, model=None, make_logs=False
     ):
         # delete_my_code
         print('- sync.link _search_links_external')
@@ -249,7 +248,7 @@ class SyncLink(models.Model):
                 continue
             operator = "in" if isinstance(v, list) else "="
             domain.append((k, operator, v))
-        domain.append(('bot_name', '=', bot_name))
+        domain.append(('bot_id', '=', bot_id))
         print('domain =', domain)
         links = self.search(domain)
         if make_logs:
@@ -319,14 +318,14 @@ class SyncLink(models.Model):
 
     # delete_my_code_new
     def _set_link_odoo(
-        self, record, relation, ref,bot_name, sync_date=None, allow_many2many=False
+        self, record, relation, ref, bot_id, sync_date=None, allow_many2many=False
     ):
         # delete_my_code
         print('- sync.link _set_link_odoo')
         refs = {ODOO: record.id, EXTERNAL: ref}
         print('refs =',refs)
         return self._set_link_external(
-            relation, refs, bot_name, sync_date, allow_many2many, record._name
+            relation, refs, bot_id, sync_date, allow_many2many, record._name
         )
 
     # def _set_link_odoo(
@@ -343,20 +342,20 @@ class SyncLink(models.Model):
     #     )
 
     # delete_my_code_new
-    def _get_link_odoo(self, relation, ref, bot_name, model=None):
+    def _get_link_odoo(self, relation, ref, bot_id, model=None):
         refs = {ODOO: None, EXTERNAL: ref}
-        return self._get_link_external(relation, refs, bot_name, model=model)
+        return self._get_link_external(relation, refs, bot_id, model=model)
 
     # def _get_link_odoo(self, relation, ref, model=None):
     #     refs = {ODOO: None, EXTERNAL: ref}
     #     return self._get_link_external(relation, refs, model=model)
 
     # delete_my_code_new
-    def _search_links_odoo(self, records, relation, bot_name, refs=None):
+    def _search_links_odoo(self, records, relation, bot_id, refs=None):
         refs = {ODOO: records.ids, EXTERNAL: refs}
         print('refs =',refs)
         return self._search_links_external(
-            relation, refs, bot_name, model=records._name, make_logs=True
+            relation, refs, bot_id, model=records._name, make_logs=True
         )
 
     # def _search_links_odoo(self, records, relation, refs=None):
@@ -368,15 +367,15 @@ class SyncLink(models.Model):
     # Common API
 
     # delete_my_code_new
-    def _get_link(self, rel, ref_info, bot_name, model=None):
+    def _get_link(self, rel, ref_info, bot_id, model=None):
         if isinstance(ref_info, dict):
             # External link
             external_refs = ref_info
-            return self._get_link_external(rel, external_refs, bot_name, model=model)
+            return self._get_link_external(rel, external_refs, bot_id, model=model)
         else:
             # Odoo link
             ref = ref_info
-            return self._get_link_odoo(rel, ref, bot_name, model=model)
+            return self._get_link_odoo(rel, ref, bot_id, model=model)
 
     # def _get_link(self, rel, ref_info, bot_name, model=None):
     #     if isinstance(ref_info, dict):
@@ -411,11 +410,11 @@ class SyncLink(models.Model):
 
         # delete_my_code_new
         def set_link(
-            rel, external_refs, bot_name, sync_date=None, allow_many2many=False, model=None
+            rel, external_refs, bot_id, sync_date=None, allow_many2many=False, model=None
         ):
             # Works for external links only
             return env["sync.link"]._set_link_external(
-                rel, external_refs, bot_name, sync_date, allow_many2many, model
+                rel, external_refs, bot_id, sync_date, allow_many2many, model
             )
         # def set_link(
         #     rel, external_refs, sync_date=None, allow_many2many=False, model=None
@@ -426,10 +425,10 @@ class SyncLink(models.Model):
         #     )
 
         # delete_my_code_new
-        def search_links(rel, external_refs, bot_name):
+        def search_links(rel, external_refs, bot_id):
             # Works for external links only
             return env["sync.link"]._search_links_external(
-                rel, external_refs, bot_name, make_logs=True
+                rel, external_refs, bot_id, make_logs=True
             )
 
         # def search_links(rel, external_refs):
@@ -439,8 +438,8 @@ class SyncLink(models.Model):
         #     )
 
         # delete_my_code_new
-        def get_link(rel, ref_info, bot_name, model=None):
-            return env["sync.link"]._get_link(rel, ref_info, bot_name, model=model)
+        def get_link(rel, ref_info, bot_id, model=None):
+            return env["sync.link"]._get_link(rel, ref_info, bot_id, model=model)
 
         # def get_link(rel, ref_info, model=None):
         #     return env["sync.link"]._get_link(rel, ref_info, model=model)

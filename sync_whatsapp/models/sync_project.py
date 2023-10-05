@@ -16,7 +16,7 @@ class SyncProjectWhatsApp(models.Model):
     _inherit = "sync.project.context"
 
     @api.model
-    def _eval_context_whatsapp_twilio(self, secrets, eval_context):
+    def _eval_context_whatsapp(self, secrets, eval_context):
         """Adds whatsapp object:"""
         params = eval_context["params"]
 
