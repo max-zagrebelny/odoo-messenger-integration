@@ -8,7 +8,7 @@
         <field name="name">WhatsApp (Twilio) Integration</field>
         <field
             name="eval_context_ids"
-            eval="[(4, ref('sync_project_context_whatsapp_twilio'))]"
+            eval="ref('sync_project_context_whatsapp_twilio')"
         />
         <field
             name="common_code"
@@ -130,16 +130,17 @@ def validate_email(email, partner, whatsapp_user_ref):
   whatsapp_user_ref = message["From"]
 
   # TODO: parse avatar from "profilePicThumObj"
+  bot_id = bot.id
 
   partner_kwargs = dict(message=message)
-  partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_TWILIO_PARTNER, whatsapp_user_ref, partner_vals, partner_kwargs, params.BOT_NAME)
+  partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_TWILIO_PARTNER, whatsapp_user_ref, bot_id, partner_vals, partner_kwargs)
 
   if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
       operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
       operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
       partner_ids = [partner.id] + operators_partner_ids
-      channels, is_new_channel = multi_livechat.get_channel(WHATSAPP_TWILIO_CHANNEL, whatsapp_user_ref, channel_name, partner_ids, params.BOT_NAME)
+      channels, is_new_channel = multi_livechat.get_channel(WHATSAPP_TWILIO_CHANNEL, whatsapp_user_ref, channel_name, partner_ids, bot_id)
 
       if params.CHAT_MODEL != "res.partner":
         def thread_vals(partner):
@@ -157,7 +158,7 @@ def validate_email(email, partner, whatsapp_user_ref):
           thread_kwargs,
           params.CHAT_MODEL,
           record_message,
-          params.BOT_NAME
+          bot_id
         )
         if is_new_thread:
           multi_livechat.message_post(channels[0],
@@ -167,8 +168,8 @@ def validate_email(email, partner, whatsapp_user_ref):
 
 
 
-      odoo_message_text = message["Body"]
-      odoo_media_url = message["MediaUrl0"]
+      odoo_message_text = message.get("Body", "")
+      odoo_media_url = message.get("MediaUrl0", None)
 
       if odoo_message_text:
         if odoo_message_text == "/start":
@@ -224,7 +225,7 @@ def handle_db(records):
         process_message(mail_message)
 
 def process_message(mail_message):
-    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_TWILIO_PARTNER, params.BOT_NAME):
+    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_TWILIO_PARTNER, bot.id):
         log("Message from external chat. No need to send back. Ignore")
         return
 
@@ -233,7 +234,7 @@ def process_message(mail_message):
         log("channel type is not %s" % multi_livechat.channel_type, LOG_DEBUG)
         return
 
-    channel_link = channel.search_links(WHATSAPP_TWILIO_CHANNEL, params.BOT_NAME)
+    channel_link = channel.search_links(WHATSAPP_TWILIO_CHANNEL, bot.id)
     if not channel_link:
         log("channel link not found")
         return
@@ -273,28 +274,20 @@ def send_whatsapp_file(external_user_ref, media):
         <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
         <field
             name="code"
-        ><![CDATA[
-def handle_db(records):
-  if records.project_id.id != project_id:
+        ><![CDATA[def handle_db(records):
+  if records.project_id.id != bot.id:
     return
-  channel_links = env["sync.link"].search([('bot_id', '=', bot.id),('relation', '=', 'VIBER_CHANNEL')])
+  channel_links = env["sync.link"].search([('bot_id', '=', bot.id),('relation', '=', 'WHATSAPP_TWILIO_CHANNEL')])
   if not channel_links:
-      return
+    return
   external_user_refs = [channel.external for channel in channel_links]
-  message = [keyboard_message]
-
-
-  if records.rich_media:
-    message.insert(0, rich_media)
-
-  if records.msg:
-    message.insert(1, viber_messages.TextMessage(text=records.msg))
 
   for user_ref in external_user_refs:
-    send_viber_message(user_ref, message)
+    send_whatsapp_message(user_ref, records.msg)
 
-def send_viber_message(external_user_ref, message):
-  viber_api.send_messages(external_user_ref, message)
+
+def send_whatsapp_message(external_user_ref, message):
+  whatsapp_service_api.send_message(params.BOT_NUMBER, external_user_ref, message)
 ]]></field>
     </record>
     <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">

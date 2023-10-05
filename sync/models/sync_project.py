@@ -346,7 +346,7 @@ class SyncProject(models.Model):
                 secrets[p.key] = p.value
             eval_context_frozen = frozendict(eval_context)
             secrets = AttrDict()
-            secrets['VIBER_BOT_TOKEN'] = self.token
+            secrets['WHATSAPP_TWILIO_TOKEN'] = self.token
             print("secrets = ", secrets)
             print("self.eval_context_ids = ",self.eval_context_ids)
             for ec in self.eval_context_ids:
