@@ -16,6 +16,10 @@ class SyncTriggerButton(models.Model):
     sync_project_id = fields.Many2one(
         "sync.project", related="sync_task_id.project_id", readonly=True
     )
+
+    # delete_my_code
+    type_button = fields.Selection(string='Button type',
+                                   selection=[('start', 'Start Button'), ('remove', 'Remove Webhook')])
     active = fields.Boolean(default=True)
 
     def start_button(self):

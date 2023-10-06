@@ -6,13 +6,9 @@
 import base64
 import logging
 
-import xml.etree.ElementTree as ET # для загрузки контексту
+import xml.etree.ElementTree as ET  # для загрузки контексту
 
 from pytz import timezone
-
-from odoo import api, fields, models, tools
-from odoo.modules import get_module_resource
-import base64
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -47,7 +43,6 @@ def cleanup_eval_context(eval_context):
 
 
 class SyncProject(models.Model):
-
     _name = "sync.project"
     _description = "Sync Project"
 
@@ -72,8 +67,6 @@ class SyncProject(models.Model):
     """,
     )
     param_ids = fields.One2many("sync.project.param", "project_id", copy=True)
-    text_param_ids = fields.One2many("sync.project.text", "project_id", copy=True)
-    secret_ids = fields.One2many("sync.project.secret", "project_id", copy=True)
     task_ids = fields.One2many("sync.task", "project_id", copy=True)
     task_count = fields.Integer(compute="_compute_task_count")
     trigger_cron_count = fields.Integer(
@@ -96,12 +89,22 @@ class SyncProject(models.Model):
     log_ids = fields.One2many("ir.logging", "sync_project_id")
     log_count = fields.Integer(compute="_compute_log_count")
 
+    # delete_my_code
     user_ids = fields.One2many('sync.partner', 'bot_id')
     users_count = fields.Integer(compute="_compute_users_count")
 
     token = fields.Char('Token')
 
+    state = fields.Selection(string='State',
+                             selection=[("new", "New"), ("active_webhook", "Active Webhook"),
+                                        ("not_active_webhook", "Not active Webhook")],
+                             default="new",
+                             copy=False,
+                             help="Type is used to separate New, Active Webhook, Not active Webhook")
+
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+
+    #image_icon_id = fields.Many2one('sync.image.icon')
 
     def copy(self, default=None):
         default = dict(default or {})
@@ -113,7 +116,26 @@ class SyncProject(models.Model):
         return super().unlink()
 
     def action_start_button(self):
-        return self.trigger_button_ids.start_button()
+        button = [b for b in self.trigger_button_ids if b.type_button == 'remove'][0]
+        tmp = button.start_button()
+        self.state = 'active_webhook'
+        return tmp
+
+    def action_remove_button(self):
+        button = [b for b in self.trigger_button_ids if b.type_button == 'remove'][0]
+        button.start_button()
+        self.state = 'new'
+        self.active = False
+
+    def action_send_to_everyone(self):
+        # Відкрийте модальне вікно для створення нового запису в моделі model2
+        return {
+            'name': 'Написати повідомлення',
+            'view_mode': 'form',
+            'res_model': 'send.to.everyone',
+            'type': 'ir.actions.act_window',
+            'target': 'new',
+        }
 
     def _compute_eval_context_description(self):
         for r in self:
@@ -208,7 +230,7 @@ class SyncProject(models.Model):
 
         def add_job(function, **options):
             print("- sync_project add_job")
-            print("function = ",function)
+            print("function = ", function)
             print("callable = ", callable(function))
             if callable(function):
                 function = function.__name__
@@ -235,20 +257,15 @@ class SyncProject(models.Model):
         params = AttrDict()
         for p in self.param_ids:
             params[p.key] = p.value
-        print('params =',params)
+        print('params =', params)
         params['BOT_NAME'] = self.name
-
-        texts = AttrDict()
-        for p in self.text_param_ids:
-            texts[p.key] = p.value
-        print('texts =',texts)
 
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):
             webhooks[w.trigger_name] = w.website_url
 
         # delete_my_code
-        print("webhooks - ",webhooks)
+        print("webhooks - ", webhooks)
 
         def log_transmission(recipient_str, data_str):
             log(data_str, name=recipient_str, log_type="data_out")
@@ -273,8 +290,8 @@ class SyncProject(models.Model):
 
             return (
                 record.sudo()
-                .env["ir.attachment"]
-                .search(
+                    .env["ir.attachment"]
+                    .search(
                     [
                         ("res_model", "=", record._name),
                         ("res_field", "=", fname),
@@ -288,17 +305,17 @@ class SyncProject(models.Model):
         # delete_my_code
         print("context - ", context)
         env = self.env(context=context)
-        sync_partner_context = env['sync.partner']._get_eval_context() # delete_my_code
+        sync_partner_context = env['sync.partner']._get_eval_context()  # delete_my_code
         link_functions = env["sync.link"]._get_eval_context()
         print("link_functions - ", link_functions)
         eval_context = dict(
             **link_functions,
             **self._get_sync_functions(log, link_functions),
-            **sync_partner_context, # delete_my_code
+            **sync_partner_context,  # delete_my_code
             **{
-                "bot": self, # delete_my_code
-                "print": print, # delete_my_code
-                "re_match": match, # delete_my_code
+                "bot": self,  # delete_my_code
+                "print": print,  # delete_my_code
+                "re_match": match,  # delete_my_code
                 "env": env,
                 "log": log,
                 "log_transmission": log_transmission,
@@ -308,7 +325,6 @@ class SyncProject(models.Model):
                 "LOG_ERROR": LOG_ERROR,
                 "LOG_CRITICAL": LOG_CRITICAL,
                 "params": params,
-                "texts": texts,
                 "webhooks": webhooks,
                 "user": self.env.user,
                 "trigger": job.trigger_name,
@@ -341,26 +357,20 @@ class SyncProject(models.Model):
         if self.eval_context_ids:
             start_time = time.time()
 
-            secrets = AttrDict()
-            for p in self.sudo().secret_ids:
-                secrets[p.key] = p.value
             eval_context_frozen = frozendict(eval_context)
-            secrets = AttrDict()
-            secrets['TELEGRAM_BOT_TOKEN'] = self.token
-            print("secrets = ", secrets)
-            print("self.eval_context_ids = ",self.eval_context_ids)
+            print("self.eval_context_ids = ", self.eval_context_ids)
             for ec in self.eval_context_ids:
-                print('ec =',ec)
+                print('ec =', ec)
                 method = ec.get_eval_context_method()
                 eval_context = dict(
-                    **eval_context, **method(secrets, eval_context_frozen)
+                    **eval_context, **method(self.token, eval_context_frozen)
                 )
             cleanup_eval_context(eval_context)
 
             executing_custom_context = time.time() - start_time
 
         start_time = time.time()
-        print("common_code = ",self.common_code)
+        print("common_code = ", self.common_code)
         print("safe_eval sync_project _get_eval_context")
         safe_eval(
             (self.common_code or "").strip(), eval_context, mode="exec", nocopy=True
@@ -372,7 +382,7 @@ class SyncProject(models.Model):
             LOG_DEBUG,
         )
         # delete_my_code
-        print("eval_context1 - ",eval_context)
+        print("eval_context1 - ", eval_context)
         cleanup_eval_context(eval_context)
         print("eval_context2 - ", eval_context)
         return eval_context
@@ -448,7 +458,7 @@ class SyncProject(models.Model):
         # def sync_y2x(src_list, sync_info, create=False, update=False):
         #     return sync_external(src_list, sync_info["relation"], sync_info["y"], sync_info["x"], create=create, update=update)
         def sync_external(
-            src_list, relation, src_info, dst_info, create=False, update=False
+                src_list, relation, src_info, dst_info, create=False, update=False
         ):
             # src_info["get_ref"]
             # src_info["system"]: e.g. "github"
@@ -486,10 +496,6 @@ class SyncProject(models.Model):
     def parse_xml(self):
         self.env['sync.project.param'].sudo().with_context(active_test=False).search(
             [('project_id', '=', self.id)]).unlink()
-        self.env['sync.project.secret'].sudo().with_context(active_test=False).search(
-            [('project_id', '=', self.id)]).unlink()
-        self.env['sync.project.text'].sudo().with_context(active_test=False).search(
-            [('project_id', '=', self.id)]).unlink()
         self.env['sync.trigger.button'].sudo().with_context(active_test=False).search(
             [('sync_project_id', '=', self.id)]).unlink()
         self.env['sync.trigger.automation'].sudo().with_context(active_test=False).search(
@@ -498,11 +504,9 @@ class SyncProject(models.Model):
             [('sync_project_id', '=', self.id)]).unlink()
         self.env['sync.task'].sudo().with_context(active_test=False).search([('project_id', '=', self.id)]).unlink()
         self.param_ids.unlink()
-        self.text_param_ids.unlink()
-        self.secret_ids.unlink()
         self.task_ids.unlink()
         self.trigger_button_ids.unlink()
-        #self.send_to_everyone_ids.unlink()
+        # self.send_to_everyone_ids.unlink()
 
         if self.eval_context_ids:
             name_module = 'sync_' + self.eval_context_ids.name
@@ -567,19 +571,8 @@ class SyncProject(models.Model):
     def check_bool(self, value):
         return value.lower() == 'true' or value == '1'
 
-    def action_send_to_everyone(self):
-        # Відкрийте модальне вікно для створення нового запису в моделі model2
-        return {
-            'name': 'Написати повідомлення',
-            'view_mode': 'form',
-            'res_model': 'send.to.everyone',
-            'type': 'ir.actions.act_window',
-            'target': 'new',
-        }
-
 
 class SyncProjectParamMixin(models.AbstractModel):
-
     _name = "sync.project.param.mixin"
     _description = "Template model for Parameters"
     _rec_name = "key"
@@ -609,38 +602,9 @@ class SyncProjectParamMixin(models.AbstractModel):
 
 
 class SyncProjectParam(models.Model):
-
     _name = "sync.project.param"
     _description = "Project Parameter"
     _inherit = "sync.project.param.mixin"
-
-
-class SyncProjectText(models.Model):
-    _name = "sync.project.text"
-    _description = "Project Text Parameter"
-    _inherit = "sync.project.param.mixin"
-
-    value = fields.Text("Value", translate=True)
-
-
-class SyncProjectSecret(models.Model):
-
-    _name = "sync.project.secret"
-    _description = "Project Secret Parameter"
-    _inherit = "sync.project.param.mixin"
-
-    value = fields.Char(groups="sync.sync_group_manager")
-
-    def action_show_value(self):
-        self.ensure_one()
-        return {
-            "name": _("Secret Parameter"),
-            "type": "ir.actions.act_window",
-            "view_mode": "form",
-            "res_model": "sync.project.secret",
-            "target": "new",
-            "res_id": self.id,
-        }
 
 
 # see https://stackoverflow.com/a/14620633/222675
@@ -648,5 +612,3 @@ class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
-
-

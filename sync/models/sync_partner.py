@@ -9,25 +9,24 @@ class SyncPartner(models.Model):
 
     partner_id = fields.Many2one('res.partner', ondelete='cascade', required=True)
     bot_id = fields.Many2one('sync.project', ondelete='cascade', required=True)
-    id_user = fields.Integer('ID User', required=True)
+    external_id = fields.Float('ID User', size=11, digits=(11,0), required=True)
     state_user = fields.Char('State', default='None')
     name = fields.Char('Name', related="partner_id.name")
 
-    def set_user(self, partner_id, bot_id, id_user):
-        existing = self._search_partner(bot_id, id_user)
+    def set_user(self, partner_id, bot_id, external_id):
+        ''' Create new record'''
+        existing = self._search_partner(bot_id, external_id)
         if existing:
-            # delete_my_code
-            print("--- Use existing link ---")
             return existing
-        vals = {'partner_id':partner_id,'bot_id':bot_id,'id_user':id_user}
+        vals = {'partner_id':partner_id,'bot_id':bot_id,'external_id':external_id}
         return self.create(vals)
 
-    def _search_partner(self, bot_id, id_user):
-        domain = [('bot_id','=',bot_id),('id_user','=',id_user)]
+    def _search_partner(self, bot_id, external_id):
+        domain = [('bot_id','=',bot_id),('external_id','=',external_id)]
         return self.search(domain)
 
-    def get_partner(self, bot_id, id_user):
-        users = self._search_partner(bot_id, id_user)
+    def get_partner(self, bot_id, external_id):
+        users = self._search_partner(bot_id, external_id)
         if len(users) > 1:
             raise ValidationError(
                     (
@@ -36,13 +35,14 @@ class SyncPartner(models.Model):
                 )
         return users.odoo if users else None
 
-    def get_partner_with_create(self, bot_id, id_user, callback_vals, callback_kwargs):
-        links = self.get_partner(bot_id, id_user)
+    def get_partner_with_create(self, bot_id, external_id, callback_vals, callback_kwargs):
+        ''' If not exist create one'''
+        links = self.get_partner(bot_id, external_id)
         if not links:
             vals = callback_vals(**callback_kwargs)
             print(f"user vals name: {vals['name']}")
             partner = self.env["res.partner"].sudo().create(vals)
-            self.set_user(partner.id, bot_id, id_user)
+            self.set_user(partner.id, bot_id, external_id)
             return partner, True
         return links, False
 
