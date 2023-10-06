@@ -102,6 +102,7 @@ class SyncProject(models.Model):
     token = fields.Char('Token')
 
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+    operator_ids = fields.Many2many("res.users")
 
     def copy(self, default=None):
         default = dict(default or {})
@@ -238,10 +239,15 @@ class SyncProject(models.Model):
         print('params =', params)
         params['BOT_NAME'] = self.name
 
+        operators = self.operator_ids.ids
+        operator_ids_string = ','.join(map(str, operators))
+
+        params["OPERATOR_IDS"] = operator_ids_string
+
         texts = AttrDict()
         for p in self.text_param_ids:
             texts[p.key] = p.value
-        print('texts =',texts)
+        print('texts =', texts)
 
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):

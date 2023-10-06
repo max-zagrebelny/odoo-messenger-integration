@@ -6,7 +6,7 @@
     <record id="sync_project_action" model="ir.actions.act_window">
         <field name="name">Sync Projects</field>
         <field name="res_model">sync.project</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">kanban,tree,form</field>
         <field name="context">{"active_test": False}</field>
     </record>
 
@@ -156,11 +156,8 @@
                         <group>
                             <field name="token" password="True"/>
                             <field name="eval_context_ids" widget="selection" options="{'no_create': True}" string="Bot type"/>
+                            <field name="operator_ids" widget="many2many_tags" options="{'no_create': True}" string="Operator"/>
                         </group>
-
-                        <p>
-                            Operators:
-                        </p>
                     </div>
 
                     <notebook>

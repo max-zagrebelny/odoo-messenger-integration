@@ -397,7 +397,7 @@ def process_message(message):
         return
 
     external_user_ref = channel_link.external
-    partner,is_new = multi_livechat.get_partner(VIBER_PARTNER, external_user_ref, None, None, bot_id)
+    partner, is_new = multi_livechat.get_partner(VIBER_PARTNER, external_user_ref, bot_id, None, None)
     check_partner(partner)
 
     if message.author_id.search_links(VIBER_PARTNER, bot_id) or message.author_id.id == multi_livechat.odoobot_id:
@@ -469,7 +469,7 @@ def check_partner(partner):
             name="code"
         ><![CDATA[
 def handle_db(records):
-  if records.project_id.id != project_id:
+  if records.project_id.id != bot.id:
     return
   channel_links = env["sync.link"].search([('bot_id', '=', bot.id),('relation', '=', 'VIBER_CHANNEL')])
   if not channel_links:
