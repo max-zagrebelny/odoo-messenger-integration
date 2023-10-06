@@ -258,7 +258,6 @@ class SyncProject(models.Model):
         for p in self.param_ids:
             params[p.key] = p.value
         print('params =', params)
-        params['BOT_NAME'] = self.name
 
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):
