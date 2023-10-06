@@ -390,7 +390,7 @@ def process_message(message):
         return
 
     external_user_ref = channel_link.external
-    partner, is_new = get_partner(bot_id, external_user_ref)
+    partner = get_partner(bot_id, external_user_ref)
     check_partner(partner)
 
     if message.author_id.search_links(VIBER_PARTNER, bot_id) or message.author_id.id == multi_livechat.odoobot_id:
@@ -468,8 +468,6 @@ def handle_db(records):
   if not channel_links:
       return
   external_user_refs = [channel.external for channel in channel_links]
-  message = [keyboard_message]
-
 
   if records.rich_media:
     message.insert(0, rich_media)

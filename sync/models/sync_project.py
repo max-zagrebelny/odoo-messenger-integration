@@ -94,6 +94,7 @@ class SyncProject(models.Model):
     users_count = fields.Integer(compute="_compute_users_count")
 
     token = fields.Char('Token')
+    messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
 
     state = fields.Selection(string='State',
                              selection=[("new", "New"), ("active_webhook", "Active Webhook"),
@@ -106,6 +107,12 @@ class SyncProject(models.Model):
     operator_ids = fields.Many2many("res.users")
 
     #image_icon_id = fields.Many2one('sync.image.icon')
+    def compute_image_default(self):
+        for context in self.eval_context_ids:
+            name_module = 'sync_' + context.name
+            image_path = "odoo-messenger-integration/{}/static/images/icon.png".format(name_module)
+            image_binary_data = open(image_path, 'rb').read()
+            self.write({'messenger_image': base64.b64encode(image_binary_data)})
 
     def copy(self, default=None):
         default = dict(default or {})
@@ -508,6 +515,7 @@ class SyncProject(models.Model):
         # self.send_to_everyone_ids.unlink()
 
         if self.eval_context_ids:
+            self.compute_image_default()
             name_module = 'sync_' + self.eval_context_ids.name
             path = "odoo-messenger-integration/{}/data/sync_project_data.xml".format(name_module)
             tree = ET.parse(path)
