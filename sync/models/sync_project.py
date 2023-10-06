@@ -117,7 +117,7 @@ class SyncProject(models.Model):
         return super().unlink()
 
     def action_start_button(self):
-        button = [b for b in self.trigger_button_ids if b.type_button == 'remove'][0]
+        button = [b for b in self.trigger_button_ids if b.type_button == 'start'][0]
         tmp = button.start_button()
         self.state = 'active_webhook'
         return tmp

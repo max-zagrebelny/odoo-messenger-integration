@@ -211,6 +211,7 @@ def check_partner(partner):
     <record id="setup-webhook--manual-trigger" model="sync.trigger.button">
         <field name="trigger_name">SETUP_WEBHOOK</field>
         <field name="sync_task_id" ref="setup--sync-task" />
+        <field name="type_button">start</field>
     </record>
 
     <record id="viber_task_remove" model="sync.task">
@@ -219,9 +220,8 @@ def check_partner(partner):
         <field name="project_id" ref="viber-integration--sync-project" />
         <field
             name="code"
-        ><![CDATA[
-    def handle_button():
-        viber_api.unset_webhook(webhooks.VIBER)
+        ><![CDATA[def handle_button():
+    viber_api.unset_webhook(webhooks.VIBER)
         ]]></field>
     </record>
     <record id="viber_trigger_button_remove" model="sync.trigger.button">
@@ -272,7 +272,7 @@ def check_partner(partner):
   if isinstance(vrequest, viber_requests.ViberMessageRequest):
     partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
     bot_id = bot.id
-    partner, is_new_partner = multi_livechat.get_partner(VIBER_PARTNER, viber_user_ref, bot_id, partner_vals, partner_kwargs)
+    partner, is_new_partner = get_partner_with_create(bot_id, viber_user_ref, partner_vals, partner_kwargs)
 
     vals = partner_vals(**partner_kwargs)
     avatar = vals["image_1920"]
@@ -390,7 +390,7 @@ def process_message(message):
         return
 
     external_user_ref = channel_link.external
-    partner, is_new = multi_livechat.get_partner(VIBER_PARTNER, external_user_ref, bot_id, None, None)
+    partner, is_new = get_partner(bot_id, external_user_ref)
     check_partner(partner)
 
     if message.author_id.search_links(VIBER_PARTNER, bot_id) or message.author_id.id == multi_livechat.odoobot_id:

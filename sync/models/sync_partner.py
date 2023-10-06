@@ -9,7 +9,7 @@ class SyncPartner(models.Model):
 
     partner_id = fields.Many2one('res.partner', ondelete='cascade', required=True)
     bot_id = fields.Many2one('sync.project', ondelete='cascade', required=True)
-    external_id = fields.Float('ID User', size=11, digits=(11,0), required=True)
+    external_id = fields.Char('ID User', required=True)
     state_user = fields.Char('State', default='None')
     name = fields.Char('Name', related="partner_id.name")
 
