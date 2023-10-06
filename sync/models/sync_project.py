@@ -103,6 +103,7 @@ class SyncProject(models.Model):
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
 
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+    operator_ids = fields.Many2many("res.users")
 
     #image_icon_id = fields.Many2one('sync.image.icon')
 
@@ -258,8 +259,6 @@ class SyncProject(models.Model):
         for p in self.param_ids:
             params[p.key] = p.value
         print('params =', params)
-        params['BOT_NAME'] = self.name
-
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):
             webhooks[w.trigger_name] = w.website_url

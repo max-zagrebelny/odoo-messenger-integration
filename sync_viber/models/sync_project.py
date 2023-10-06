@@ -26,7 +26,7 @@ class SyncProjectViber(models.Model):
     _inherit = "sync.project.context"
 
     @api.model
-    def _eval_context_viber(self, secrets, eval_context):
+    def _eval_context_viber(self, token, eval_context):
         """Adds viber object:
         - viber_api.set_webhook
         - viber_api.send_messages
@@ -45,7 +45,7 @@ class SyncProjectViber(models.Model):
         - multi_livechat.*
         """
         params = eval_context["params"]
-        if not secrets.VIBER_BOT_TOKEN:
+        if not token:
             raise Exception(_("Viber bot token is not set"))
 
         company_logo = "%s/logo.png?company_id=%s" % (
@@ -53,9 +53,9 @@ class SyncProjectViber(models.Model):
             self.env.company.id,
         )
         bot_configuration = BotConfiguration(
-            name=params.BOT_NAME,
+            name=eval_context["bot"].name,
             avatar=params.BOT_AVATAR_URL or company_logo,
-            auth_token=secrets.VIBER_BOT_TOKEN,
+            auth_token=token,
         )
         viber = Api(bot_configuration)
 
