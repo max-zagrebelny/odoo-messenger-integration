@@ -37,7 +37,7 @@ registerPatch({
         hasThreadIcon: {
             compute() {
                 if (this.channel.channel_type === 'multi_livechat_viber') {
-                    return clear();
+                    return true;
                 }
                 return this._super();
             },

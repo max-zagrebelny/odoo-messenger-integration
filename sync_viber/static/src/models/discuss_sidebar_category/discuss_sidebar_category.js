@@ -30,7 +30,7 @@ registerPatch({
                 }
                 if (this.discussAsMLChat_viber) {
                     return this.messaging.currentUser.res_users_settings_id
-                        .is_discuss_sidebar_category_viber_open;
+                        .is_discuss_sidebar_category_viber_open
                 }
                 return this._super();
             },

@@ -103,6 +103,7 @@ class SyncProject(models.Model):
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
 
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+    operator_ids = fields.Many2many("res.users")
 
     #image_icon_id = fields.Many2one('sync.image.icon')
 
@@ -116,7 +117,7 @@ class SyncProject(models.Model):
         return super().unlink()
 
     def action_start_button(self):
-        button = [b for b in self.trigger_button_ids if b.type_button == 'remove'][0]
+        button = [b for b in self.trigger_button_ids if b.type_button == 'start'][0]
         tmp = button.start_button()
         self.state = 'active_webhook'
         return tmp
