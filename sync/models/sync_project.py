@@ -239,11 +239,6 @@ class SyncProject(models.Model):
         print('params =', params)
         params['BOT_NAME'] = self.name
 
-        operators = self.operator_ids.ids
-        operator_ids_string = ','.join(map(str, operators))
-
-        params["OPERATOR_IDS"] = operator_ids_string
-
         texts = AttrDict()
         for p in self.text_param_ids:
             texts[p.key] = p.value
