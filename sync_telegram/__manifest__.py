@@ -6,7 +6,7 @@
     "name": """Telegram Integration""",
     "summary": """Telegram integration powered by Sync Studio""",
     "category": "Discuss",
-    "images": ["images/sync_telegram.jpg"],
+    "images": ["images/telegram.jpg"],
     "version": "15.0.6.0.0",
     "application": False,
     "author": "IT Projects Labs, Ilya Ilchenko",

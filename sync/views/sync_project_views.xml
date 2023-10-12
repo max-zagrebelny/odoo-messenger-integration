@@ -19,6 +19,7 @@
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click">
                             <h4>
+                                <field name="messenger_image" widget="image" string="Messenger Image" style="width: 50px; height: 50px;"/>
                                 <field name="name"/>
                             </h4>
                             Users:
@@ -149,6 +150,7 @@
 
                     <div class="oe_title">
                         <h1>
+                            <field name="messenger_image" widget="image" string="Messenger Image" style="width: 100px; height: 100px;"/>
                             <field name="name" placeholder="E.g. Legacy Migration"/>
                             <!--<field name="param_value" placeholder="E.g. Legacy Migration"/>
                             <field name="secret_value" placeholder="Token"/>-->

@@ -5,8 +5,9 @@
 
 import base64
 import logging
+import os
 
-import xml.etree.ElementTree as ET # для загрузки контексту
+import xml.etree.ElementTree as ET  # для загрузки контексту
 
 from pytz import timezone
 
@@ -35,6 +36,9 @@ from .ir_logging import LOG_CRITICAL, LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_WARNIN
 
 from re import match
 
+from PIL import Image
+import io
+
 _logger = logging.getLogger(__name__)
 DEFAULT_LOG_NAME = "Log"
 
@@ -47,7 +51,6 @@ def cleanup_eval_context(eval_context):
 
 
 class SyncProject(models.Model):
-
     _name = "sync.project"
     _description = "Sync Project"
 
@@ -61,6 +64,16 @@ class SyncProject(models.Model):
     eval_context_ids = fields.Many2one(
         "sync.project.context", string="Evaluation contexts"
     )
+
+    messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
+
+    def compute_image_default(self):
+        for context in self.eval_context_ids:
+            name_module = 'sync_' + context.name
+            image_path = "odoo-messenger-integration/{}/static/images/icon.jpg".format(name_module)
+            image_binary_data = open(image_path, 'rb').read()
+            self.write({'messenger_image': base64.b64encode(image_binary_data)})
+
     eval_context_description = fields.Text(compute="_compute_eval_context_description")
 
     common_code = fields.Text(
@@ -208,7 +221,7 @@ class SyncProject(models.Model):
 
         def add_job(function, **options):
             print("- sync_project add_job")
-            print("function = ",function)
+            print("function = ", function)
             print("callable = ", callable(function))
             if callable(function):
                 function = function.__name__
@@ -241,14 +254,14 @@ class SyncProject(models.Model):
         texts = AttrDict()
         for p in self.text_param_ids:
             texts[p.key] = p.value
-        print('texts =',texts)
+        print('texts =', texts)
 
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):
             webhooks[w.trigger_name] = w.website_url
 
         # delete_my_code
-        print("webhooks - ",webhooks)
+        print("webhooks - ", webhooks)
 
         def log_transmission(recipient_str, data_str):
             log(data_str, name=recipient_str, log_type="data_out")
@@ -288,17 +301,17 @@ class SyncProject(models.Model):
         # delete_my_code
         print("context - ", context)
         env = self.env(context=context)
-        sync_partner_context = env['sync.partner']._get_eval_context() # delete_my_code
+        sync_partner_context = env['sync.partner']._get_eval_context()  # delete_my_code
         link_functions = env["sync.link"]._get_eval_context()
         print("link_functions - ", link_functions)
         eval_context = dict(
             **link_functions,
             **self._get_sync_functions(log, link_functions),
-            **sync_partner_context, # delete_my_code
+            **sync_partner_context,  # delete_my_code
             **{
-                "bot": self, # delete_my_code
-                "print": print, # delete_my_code
-                "re_match": match, # delete_my_code
+                "bot": self,  # delete_my_code
+                "print": print,  # delete_my_code
+                "re_match": match,  # delete_my_code
                 "env": env,
                 "log": log,
                 "log_transmission": log_transmission,
@@ -346,15 +359,13 @@ class SyncProject(models.Model):
                 secrets[p.key] = p.value
             eval_context_frozen = frozendict(eval_context)
             secrets = AttrDict()
-<<<<<<< HEAD
             secrets['WHATSAPP_TWILIO_TOKEN'] = self.token
-=======
             secrets['VIBER_BOT_TOKEN'] = self.token
->>>>>>> d4d873525c761a2fdd71c67c7ba45db57127ae73
+            secrets['TELEGRAM_BOT_TOKEN'] = self.token
             print("secrets = ", secrets)
-            print("self.eval_context_ids = ",self.eval_context_ids)
+            print("self.eval_context_ids = ", self.eval_context_ids)
             for ec in self.eval_context_ids:
-                print('ec =',ec)
+                print('ec =', ec)
                 method = ec.get_eval_context_method()
                 eval_context = dict(
                     **eval_context, **method(secrets, eval_context_frozen)
@@ -364,7 +375,7 @@ class SyncProject(models.Model):
             executing_custom_context = time.time() - start_time
 
         start_time = time.time()
-        print("common_code = ",self.common_code)
+        print("common_code = ", self.common_code)
         print("safe_eval sync_project _get_eval_context")
         safe_eval(
             (self.common_code or "").strip(), eval_context, mode="exec", nocopy=True
@@ -376,7 +387,7 @@ class SyncProject(models.Model):
             LOG_DEBUG,
         )
         # delete_my_code
-        print("eval_context1 - ",eval_context)
+        print("eval_context1 - ", eval_context)
         cleanup_eval_context(eval_context)
         print("eval_context2 - ", eval_context)
         return eval_context
@@ -452,7 +463,7 @@ class SyncProject(models.Model):
         # def sync_y2x(src_list, sync_info, create=False, update=False):
         #     return sync_external(src_list, sync_info["relation"], sync_info["y"], sync_info["x"], create=create, update=update)
         def sync_external(
-            src_list, relation, src_info, dst_info, create=False, update=False
+                src_list, relation, src_info, dst_info, create=False, update=False
         ):
             # src_info["get_ref"]
             # src_info["system"]: e.g. "github"
@@ -506,9 +517,10 @@ class SyncProject(models.Model):
         self.secret_ids.unlink()
         self.task_ids.unlink()
         self.trigger_button_ids.unlink()
-        #self.send_to_everyone_ids.unlink()
+        # self.send_to_everyone_ids.unlink()
 
         if self.eval_context_ids:
+            self.compute_image_default()
             name_module = 'sync_' + self.eval_context_ids.name
             path = "odoo-messenger-integration/{}/data/sync_project_data.xml".format(name_module)
             tree = ET.parse(path)
@@ -583,7 +595,6 @@ class SyncProject(models.Model):
 
 
 class SyncProjectParamMixin(models.AbstractModel):
-
     _name = "sync.project.param.mixin"
     _description = "Template model for Parameters"
     _rec_name = "key"
@@ -613,7 +624,6 @@ class SyncProjectParamMixin(models.AbstractModel):
 
 
 class SyncProjectParam(models.Model):
-
     _name = "sync.project.param"
     _description = "Project Parameter"
     _inherit = "sync.project.param.mixin"
@@ -628,7 +638,6 @@ class SyncProjectText(models.Model):
 
 
 class SyncProjectSecret(models.Model):
-
     _name = "sync.project.secret"
     _description = "Project Secret Parameter"
     _inherit = "sync.project.param.mixin"
@@ -652,5 +661,3 @@ class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
-
-
