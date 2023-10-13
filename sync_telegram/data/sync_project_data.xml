@@ -167,7 +167,7 @@ def handle_webhook(httprequest):
     set_state(partner.id,bot_id,'mail')
     return
   elif message.text == 'Вказати номер телефону':
-    telegram.sendMessage(telegram_user_ref, "Напишіть ваш номер телефону з командою \nНаприклад +380344553087",reply_markup=telegram.delKeyBoard())
+    telegram.sendMessage(telegram_user_ref, "Напишіть ваш номер телефону з командою \nНаприклад 380664553087",reply_markup=telegram.delKeyBoard())
     set_state(partner.id,bot_id,'phone')
     return
   elif get_state(partner.id, bot_id) == 'mail':
@@ -181,7 +181,7 @@ def handle_webhook(httprequest):
         return
   elif get_state(partner.id,bot_id) == 'phone':
     phone = message.text
-    if not re_match("^\\+?[1-9][0-9]{11,11}$",phone):
+    if not re_match("^\\+?[1-9][0-9]{11,11}$",'+'+phone):
         telegram.sendMessage(telegram_user_ref, "Неправильно введений номер телефону. Спробуйте ще раз")
     else:
         partner.write({'phone':phone})
