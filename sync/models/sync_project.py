@@ -278,6 +278,7 @@ class SyncProject(models.Model):
         for p in self.param_ids:
             params[p.key] = p.value
         print('params =', params)
+
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):
             webhooks[w.trigger_name] = w.website_url

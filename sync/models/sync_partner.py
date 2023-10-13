@@ -35,11 +35,11 @@ class SyncPartner(models.Model):
                 )
         return users.odoo if users else None
 
-    def get_partner_with_create(self, bot_id, external_id, callback_vals, callback_kwargs):
+    def get_partner_with_create(self, bot_id, external_id, callback_func=None, callback_kwargs=None):
         ''' If not exist create one'''
         links = self.get_partner(bot_id, external_id)
-        if not links:
-            vals = callback_vals(**callback_kwargs)
+        if not links and callback_func and callback_kwargs:
+            vals = callback_func(**callback_kwargs)
             print(f"user vals name: {vals['name']}")
             partner = self.env["res.partner"].sudo().create(vals)
             self.set_user(partner.id, bot_id, external_id)
@@ -62,7 +62,6 @@ class SyncPartner(models.Model):
 
     def _get_eval_context(self):
         return {
-            'get_partner':self.get_partner,
             'get_partner_with_create':self.get_partner_with_create,
             'get_state':self.get_state,
             'set_state':self.set_state,
