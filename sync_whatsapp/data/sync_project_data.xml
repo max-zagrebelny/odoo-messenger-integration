@@ -73,16 +73,6 @@ def validate_email(email, partner, whatsapp_user_ref):
         <field name="url" eval="" />
         <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
     </record>
-    <record id="operator-ids--project-parameter" model="sync.project.param">
-        <field name="key">OPERATOR_IDS</field>
-        <field name="initial_value">2</field>
-        <field name="description">
-            Comma-separated list of user ids that will added to Discuss chat on getting
-            message from new WhatsApp user
-        </field>
-        <field name="url" eval="" />
-        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
-    </record>
     <record id="setup-webhook--sync-task" model="sync.task">
         <field name="name">Setup webook</field>
         <field name="active" eval="True" />
@@ -97,6 +87,23 @@ def validate_email(email, partner, whatsapp_user_ref):
         <field name="trigger_name">SETUP_WEBHOOK</field>
         <field name="name" />
         <field name="sync_task_id" ref="setup-webhook--sync-task" />
+        <field name="type_button">start</field>
+    </record>
+    <record id="whatsapp_task_remove" model="sync.task">
+        <field name="name">Remove</field>
+        <field name="active" eval="True" />
+        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
+        <field
+            name="code"
+        ><![CDATA[def handle_button():
+    print("Remove webhook!!!")
+        ]]></field>
+    </record>
+    <record id="whatsapp_trigger_button_remove" model="sync.trigger.button">
+        <field name="trigger_name">REMOVE_WEBHOOK_WHATSAPP</field>
+        <field name="name">Remove webhook whatsapp</field>
+        <field name="sync_task_id" ref="whatsapp_task_remove"/>
+        <field name="type_button">remove</field>
     </record>
     <record id="process-whatsapp-events--sync-task" model="sync.task">
         <field name="name">Process Whatsapp Events</field>
@@ -124,11 +131,11 @@ def validate_email(email, partner, whatsapp_user_ref):
   bot_id = bot.id
 
   partner_kwargs = dict(message=message)
-  partner, is_new_partner = multi_livechat.get_partner(WHATSAPP_TWILIO_PARTNER, whatsapp_user_ref, bot_id, partner_vals, partner_kwargs)
+  partner, is_new_partner = get_partner_with_create(bot_id, whatsapp_user_ref, callback_func=partner_vals, callback_kwargs=partner_kwargs)
 
   if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
-      operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
+      operators_user_ids = bot.operator_ids.ids
       operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
       partner_ids = [partner.id] + operators_partner_ids
       channels, is_new_channel = multi_livechat.get_channel(WHATSAPP_TWILIO_CHANNEL, whatsapp_user_ref, channel_name, partner_ids, bot_id)
@@ -194,6 +201,7 @@ def message_post(is_new, *args, **kwargs):
       multi_livechat.message_post(*args, **kwargs)
 
 
+
 ]]></field>
     </record>
     <record id="whatsapp-twilio--webhook-trigger" model="sync.trigger.webhook">
@@ -216,11 +224,20 @@ def handle_db(records):
         process_message(mail_message)
 
 def process_message(mail_message):
-    if mail_message.author_id.id == multi_livechat.odoobot_id or mail_message.author_id.search_links(WHATSAPP_TWILIO_PARTNER, bot.id):
+    channel = env["mail.channel"].browse(mail_message.res_id)
+
+    bot_id = bot.id
+    channel_link = channel.search_links(WHATSAPP_TWILIO_CHANNEL, bot_id)
+    if not channel_link:
+        return
+
+    external_user_ref = channel_link.external
+
+    partner, is_new_partner = get_partner_with_create(bot.id, external_user_ref)
+    if mail_message.author_id.id == multi_livechat.odoobot_id or partner.id == mail_message.author_id.id:
         log("Message from external chat. No need to send back. Ignore")
         return
 
-    channel = env["mail.channel"].browse(mail_message.res_id)
     if channel.channel_type != multi_livechat.channel_type:
         log("channel type is not %s" % multi_livechat.channel_type, LOG_DEBUG)
         return

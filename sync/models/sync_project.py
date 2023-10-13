@@ -284,12 +284,6 @@ class SyncProject(models.Model):
         for p in self.param_ids:
             params[p.key] = p.value
         print('params =', params)
-        params['BOT_NAME'] = self.name
-
-        texts = AttrDict()
-        for p in self.text_param_ids:
-            texts[p.key] = p.value
-        print('texts =', texts)
 
         webhooks = AttrDict()
         for w in self.task_ids.mapped("webhook_ids"):
@@ -390,11 +384,6 @@ class SyncProject(models.Model):
 
             eval_context_frozen = frozendict(eval_context)
 
-            secrets = AttrDict()
-            secrets['WHATSAPP_TWILIO_TOKEN'] = self.token
-            secrets['VIBER_BOT_TOKEN'] = self.token
-            secrets['TELEGRAM_BOT_TOKEN'] = self.token
-            print("secrets = ", secrets)
             print("self.eval_context_ids = ", self.eval_context_ids)
             for ec in self.eval_context_ids:
                 print('ec =', ec)
@@ -549,7 +538,6 @@ class SyncProject(models.Model):
             self.send_to_everyone_ids.unlink()
             self.eval_context_ids = self.env['sync.project.context'].search([('name', '=', name_context)], limit=1)
             self.compute_image_default()
-            self._is_bot_active()
             name_module = 'sync_' + self.eval_context_ids.name
             path = "odoo-messenger-integration/{}/data/sync_project_data.xml".format(name_module)
             tree = ET.parse(path)

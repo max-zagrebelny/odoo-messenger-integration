@@ -16,7 +16,7 @@
             <kanban>
                 <templates>
                     <t t-name="kanban-box">
-                        <field name="active" invisible="1"/>
+                        <field name="state" invisible="1"/>
                         <div class="oe_kanban_global_click">
                             <div class="o_kanban_image">
                                 <field name="messenger_image" widget="image" string="Messenger Image" style="width: 50px; height: 50px;"/>
@@ -33,11 +33,11 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="oe_kanban_bottom_right" t-if="record.active.raw_value">
+                                <div class="oe_kanban_bottom_right" t-if="record.state.raw_value=='active_webhook'">
                                     <i class="fa fa-circle" style="color: #0eec84; width: 2px; height: 2px;"/>
                                     <span style="margin-left: 15px">Online</span>
                                 </div>
-                                <div class="oe_kanban_bottom_right" t-if="!record.active.raw_value">
+                                <div class="oe_kanban_bottom_right" t-if="record.state.raw_value=='new'">
                                     <i class="fa fa-circle" style="color: #ff3333; width: 2px; height: 2px;"/>
                                     <span style="margin-left: 15px">Offline</span>
                                 </div>

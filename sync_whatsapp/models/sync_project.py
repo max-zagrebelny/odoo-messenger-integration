@@ -16,18 +16,18 @@ class SyncProjectWhatsApp(models.Model):
     _inherit = "sync.project.context"
 
     @api.model
-    def _eval_context_whatsapp(self, secrets, eval_context):
+    def _eval_context_whatsapp(self, token, eval_context):
         """Adds whatsapp object:"""
         params = eval_context["params"]
 
         if not params.WHATSAPP_TWILIO_SID:
             raise Exception(_("WhatsApp Twilio sid is not set"))
 
-        if not secrets.WHATSAPP_TWILIO_TOKEN:
+        if not token:
             raise Exception(_("WhatsApp Twilio token is not set"))
 
         account_sid = params.WHATSAPP_TWILIO_SID
-        auth_token = secrets.WHATSAPP_TWILIO_TOKEN
+        auth_token = token
         client = Client(account_sid, auth_token)
 
         # Створення вебхука
