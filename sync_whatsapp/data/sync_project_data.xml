@@ -27,15 +27,6 @@ def validate_email(email, partner, whatsapp_user_ref):
 ]]></field>
     </record>
     <record
-        id="whatsapp-twilio-service-token--project-secret-parameter"
-        model="sync.project.secret"
-    >
-        <field name="key">WHATSAPP_TWILIO_TOKEN</field>
-        <field name="description" />
-        <field name="url" eval="'https://www.twilio.com/'" />
-        <field name="project_id" ref="whatsapp-twilio-integration--sync-project" />
-    </record>
-    <record
         id="whatsapp-twilio-service-sid--project-secret-parameter"
         model="sync.project.param"
     >

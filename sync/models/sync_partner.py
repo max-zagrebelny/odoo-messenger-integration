@@ -18,11 +18,11 @@ class SyncPartner(models.Model):
         existing = self._search_partner(bot_id, external_id)
         if existing:
             return existing
-        vals = {'partner_id':partner_id,'bot_id':bot_id,'external_id':external_id}
+        vals = {'partner_id': partner_id, 'bot_id': bot_id, 'external_id': external_id}
         return self.create(vals)
 
     def _search_partner(self, bot_id, external_id):
-        domain = [('bot_id','=',bot_id),('external_id','=',external_id)]
+        domain = [('bot_id', '=', bot_id),('external_id', '=', external_id)]
         return self.search(domain)
 
     def get_partner(self, bot_id, external_id):

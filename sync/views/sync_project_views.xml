@@ -13,26 +13,58 @@
         <field name="name">sync.project.kanban</field>
         <field name="model">sync.project</field>
         <field name="arch" type="xml">
-            <kanban records_draggable="False">
+            <kanban>
                 <templates>
                     <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click" style="padding: 10px">
-                            <!-- Додайте стиль "float: left" до тегу field для іконки -->
-                            <field name="messenger_image" widget="image" string="Messenger Image" style="float: left; width: 30px; height: 30px;"/>
-                            <div class="kanban-details" style="padding-left: 10px">
-                                <h4>
-                                    <field name="name" style="padding-left: 20px" />
-                                </h4>
-                                Users:
-                                <field name="users_count"/>
-                                <br/>
-                                Channels:
-                                <!-- <field name=""/> -->
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <field name="messenger_image" widget="image" string="Messenger Image" style="width: 50px; height: 50px;"/>
+                            </div>
+                            <div>
+                                <div >
+                                 <div>
+                                     <h4 class="o_primary_text">
+                                         <field name="name"/>
+                                     </h4>
+                                 </div>
+                                <div>
+                                    <div class="o_kanban_users">
+                                        <span>Users: </span>
+                                        <field name="users_count"/>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                            <div class="oe_kanban_bottom_right">
+                                    <i class="fa fa-circle" style="color: #0eec84; width: 2px; height: 2px;"/>
                             </div>
                         </div>
                     </t>
                 </templates>
             </kanban>
+<!--            <kanban records_draggable="False">-->
+<!--                <templates>-->
+<!--                    <t t-name="kanban-box">-->
+<!--                        <div class="oe_kanban_global_click">-->
+<!--                            &lt;!&ndash; Додайте стиль "float: left" до тегу field для іконки &ndash;&gt;-->
+<!--                            <div class="o_kanban_image" >-->
+<!--                                -->
+<!--                            </div>-->
+<!--                            <div class="o_kanban_record_bottom">-->
+<!--                                <div class="oe_kanban_bottom_left">-->
+<!--                                    <h4>-->
+<!--                                        <field name="name"/>-->
+<!--                                    </h4>-->
+<!--                                </div>-->
+<!--                                <div class="oe_kanban_bottom_right ">-->
+<!--                                    Users:-->
+<!--                                    <field  name="users_count"/>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </t>-->
+<!--                </templates>-->
+<!--            </kanban>-->
         </field>
     </record>
     <record id="sync_project_view_form" model="ir.ui.view">
@@ -113,7 +145,7 @@
                         </h1>
                         <group>
                             <field name="token" password="True"/>
-                            <field name="eval_context_ids" widget="selection" options="{'no_create': True}" string="Bot type"/>
+                            <field name="eval_context_ids" options="{'no_create': True}" string="Bot type"/>
                             <field name="operator_ids" widget="many2many_tags" options="{'no_create': True}" string="Operator"/>
                         </group>
                     </div>

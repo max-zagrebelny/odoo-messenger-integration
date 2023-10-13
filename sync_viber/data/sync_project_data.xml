@@ -393,7 +393,7 @@ def process_message(message):
     partner = get_partner(bot_id, external_user_ref)
     check_partner(partner)
 
-    if message.author_id.search_links(VIBER_PARTNER, bot_id) or message.author_id.id == multi_livechat.odoobot_id:
+    if partner.id == message.author_id.id or message.author_id.id == multi_livechat.odoobot_id:
         # this message is from partner or odoo bot
         return
 
@@ -469,6 +469,8 @@ def handle_db(records):
       return
   external_user_refs = [channel.external for channel in channel_links]
 
+  message = [keyboard_message]
+
   if records.rich_media:
     message.insert(0, rich_media)
 
@@ -480,13 +482,14 @@ def handle_db(records):
 
 def send_viber_message(external_user_ref, message):
   viber_api.send_messages(external_user_ref, message)
+
 ]]></field>
     </record>
     <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">
         <field name="trigger_name">SEND_TO_EVERYONE</field>
         <field name="active" eval="True" />
         <field name="sync_task_id" ref="send-to-everyone--sync-task" />
-        <field name="model_id" ref="sync.model_send_to_everyone" />
+        <field name="model_id" ref="sync.model_send_to_everyone_viber" />
         <field name="trigger">on_create</field>
     </record>
 </odoo>
