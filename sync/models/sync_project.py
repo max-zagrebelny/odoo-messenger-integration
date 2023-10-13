@@ -71,8 +71,8 @@ class SyncProject(models.Model):
         You can add here a function or variable, that don't start with underscore and then reuse it in task's code.
     """,
     )
-    param_ids = fields.One2many("sync.project.param", "project_id", copy=True)
-    task_ids = fields.One2many("sync.task", "project_id", copy=True)
+    param_ids = fields.One2many("sync.project.param", "project_id", ondelete='cascade', copy=True)
+    task_ids = fields.One2many("sync.task", "project_id", ondelete='cascade', copy=True)
     task_count = fields.Integer(compute="_compute_task_count")
     trigger_cron_count = fields.Integer(
         compute="_compute_triggers", help="Enabled Crons"
@@ -112,13 +112,15 @@ class SyncProject(models.Model):
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
     operator_ids = fields.Many2many("res.users")
 
-    #image_icon_id = fields.Many2one('sync.image.icon')
     def compute_image_default(self):
-        for context in self.eval_context_ids:
-            name_module = 'sync_' + context.name
-            image_path = "odoo-messenger-integration/{}/static/images/icon.png".format(name_module)
-            image_binary_data = open(image_path, 'rb').read()
-            self.write({'messenger_image': base64.b64encode(image_binary_data)})
+        for record in self:
+            if record.eval_context_ids.name is False:
+                self.messenger_image = None
+            else:
+                name_module = "sync_" + record.eval_context_ids.name
+                image_path = "odoo-messenger-integration/{}/static/images/icon.png".format(name_module)
+                image_binary_data = open(image_path, 'rb').read()
+                self.update({'messenger_image': base64.b64encode(image_binary_data)})
 
     def copy(self, default=None):
         default = dict(default or {})
@@ -142,14 +144,24 @@ class SyncProject(models.Model):
         self.active = False
 
     def action_send_to_everyone(self):
-        # Відкрийте модальне вікно для створення нового запису в моделі model2
-        return {
-            'name': 'Написати повідомлення',
-            'view_mode': 'form',
-            'res_model': 'send.to.everyone',
-            'type': 'ir.actions.act_window',
-            'target': 'new',
-        }
+        if self.eval_context_ids.name == "viber":
+            return {
+                'name': 'Написати повідомлення',
+                'view_mode': 'form',
+                'res_model': 'send.to.everyone.viber',
+                'type': 'ir.actions.act_window',
+                'target': 'new',
+                'context': {'default_project_id': self.id},
+            }
+        else:
+            return {
+                'name': 'Написати повідомлення',
+                'view_mode': 'form',
+                'res_model': 'send.to.everyone',
+                'type': 'ir.actions.act_window',
+                'target': 'new',
+                'context': {'default_project_id': self.id},
+            }
 
     def _compute_eval_context_description(self):
         for r in self:
@@ -519,21 +531,23 @@ class SyncProject(models.Model):
 
     @api.onchange('eval_context_ids')
     def parse_xml(self):
-        self.env['sync.project.param'].sudo().with_context(active_test=False).search(
-            [('project_id', '=', self.id)]).unlink()
-        self.env['sync.trigger.button'].sudo().with_context(active_test=False).search(
-            [('sync_project_id', '=', self.id)]).unlink()
-        self.env['sync.trigger.automation'].sudo().with_context(active_test=False).search(
-            [('sync_project_id', '=', self.id)]).unlink()
-        self.env['sync.trigger.webhook'].sudo().with_context(active_test=False).search(
-            [('sync_project_id', '=', self.id)]).unlink()
-        self.env['sync.task'].sudo().with_context(active_test=False).search([('project_id', '=', self.id)]).unlink()
-        self.param_ids.unlink()
-        self.task_ids.unlink()
-        self.trigger_button_ids.unlink()
-        # self.send_to_everyone_ids.unlink()
-
         if self.eval_context_ids:
+            name_context = self.eval_context_ids.name
+            self.env['sync.project.param'].sudo().with_context(active_test=False).search(
+                ['|', ('id', 'in', self.param_ids.ids), ('project_id', '=', False)]).unlink()
+            self.env['sync.trigger.button'].sudo().with_context(active_test=False).search(
+                [('id', 'in', self.task_ids.button_ids.ids)]).unlink()
+            self.env['sync.trigger.automation'].sudo().with_context(active_test=False).search(
+                [('id', 'in', self.task_ids.automation_ids.ids)]).unlink()
+            self.env['sync.trigger.webhook'].sudo().with_context(active_test=False).search(
+                [('id', 'in', self.task_ids.webhook_ids.ids)]).unlink()
+            self.env['sync.task'].sudo().with_context(active_test=False).search([
+                '|', ('id', 'in', self.task_ids.ids), ('project_id', '=', False)]).unlink()
+            self.param_ids.unlink()
+            self.task_ids.unlink()
+            self.trigger_button_ids.unlink()
+            self.send_to_everyone_ids.unlink()
+            self.eval_context_ids = self.env['sync.project.context'].search([('name', '=', name_context)], limit=1)
             self.compute_image_default()
             self._is_bot_active()
             name_module = 'sync_' + self.eval_context_ids.name
@@ -553,7 +567,7 @@ class SyncProject(models.Model):
             field_name = field.get('name')
             field_value = None
             if field_name == "common_code" and model_name == "sync.project":
-                self.common_code = field.text
+                self.update({"common_code": field.text})
                 continue
             elif field_name == 'project_id' or field_name == 'sync_project_id':
                 field_value = self.id

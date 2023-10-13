@@ -13,7 +13,7 @@
         <field name="name">sync.project.kanban</field>
         <field name="model">sync.project</field>
         <field name="arch" type="xml">
-            <kanban records_draggable="False">
+            <kanban>
                 <templates>
                     <t t-name="kanban-box">
                         <field name="active" invisible="1"/>
@@ -127,7 +127,7 @@
                         </h1>
                         <group>
                             <field name="token" password="True"/>
-                            <field name="eval_context_ids" widget="selection" options="{'no_create': True}" string="Bot type"/>
+                            <field name="eval_context_ids" options="{'no_create': True}" string="Bot type"/>
                             <field name="operator_ids" widget="many2many_tags" options="{'no_create': True}" string="Operator"/>
                         </group>
                     </div>
