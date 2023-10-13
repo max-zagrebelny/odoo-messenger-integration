@@ -26,7 +26,7 @@ class SyncProjectTelegram(models.Model):
     _inherit = "sync.project.context"
 
     @api.model
-    def _eval_context_telegram(self, secrets, eval_context):
+    def _eval_context_telegram(self, token, eval_context):
         """Adds telegram object:
         * telegram.sendMessage
         * telegram.setWebhook
@@ -36,10 +36,10 @@ class SyncProjectTelegram(models.Model):
         """
         # delete_my_code
         print("- sync_project  _eval_context_telegram")
-        print(secrets)
+        print(token)
         print(eval_context)
-        if secrets.TELEGRAM_BOT_TOKEN:
-            bot = telebot.TeleBot(token=secrets.TELEGRAM_BOT_TOKEN)
+        if token:
+            bot = telebot.TeleBot(token=token)
         else:
             raise Exception("Telegram bot token is not set")
 
@@ -63,7 +63,7 @@ class SyncProjectTelegram(models.Model):
             # delete_my_code
             print("- sync_project  getFullPath")
             return "https://api.telegram.org/file/bot{}/{}".format(
-                secrets.TELEGRAM_BOT_TOKEN, file_path
+                token, file_path
             )
 
         def create_mail_сhannel(partners, channel_name):
@@ -159,6 +159,10 @@ class SyncProjectTelegram(models.Model):
             print("- sync_project setWebhook")
             bot.set_webhook(*args, **kwargs)
 
+        @LogExternalQuery("Telegram-> removeWebhook", eval_context)
+        def removeWebhook():
+            bot.remove_webhook()
+
         def parse_data(data):
             # delete_my_code
             print("- sync_project parse_data")
@@ -181,6 +185,7 @@ class SyncProjectTelegram(models.Model):
                 "getMediaFile": getMediaFile,
                 "getUserPhoto": getUserPhoto,
                 "setWebhook": setWebhook,
+                "removeWebhook":removeWebhook,
                 "parse_data": parse_data,
                 "create_mail_сhannel": create_mail_сhannel,
                 "MAX_SIZE_IMAGE": MAX_SIZE_IMAGE,

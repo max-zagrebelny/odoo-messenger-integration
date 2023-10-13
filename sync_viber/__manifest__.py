@@ -21,6 +21,7 @@
             "sync_viber/static/src/models/discuss/discuss.js",
             "sync_viber/static/src/models/discuss_sidebar_category/discuss_sidebar_category.js",
             "sync_viber/static/src/models/discuss_sidebar_category_item/discuss_sidebar_category_item.js",
+
         ],
     },
     "demo": [],

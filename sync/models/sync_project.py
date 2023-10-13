@@ -11,10 +11,6 @@ import xml.etree.ElementTree as ET  # для загрузки контексту
 
 from pytz import timezone
 
-from odoo import api, fields, models, tools
-from odoo.modules import get_module_resource
-import base64
-
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT, frozendict, html2plaintext
@@ -65,15 +61,6 @@ class SyncProject(models.Model):
         "sync.project.context", string="Evaluation contexts"
     )
 
-    messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
-
-    def compute_image_default(self):
-        for context in self.eval_context_ids:
-            name_module = 'sync_' + context.name
-            image_path = "odoo-messenger-integration/{}/static/images/icon.jpg".format(name_module)
-            image_binary_data = open(image_path, 'rb').read()
-            self.write({'messenger_image': base64.b64encode(image_binary_data)})
-
     eval_context_description = fields.Text(compute="_compute_eval_context_description")
 
     common_code = fields.Text(
@@ -85,8 +72,6 @@ class SyncProject(models.Model):
     """,
     )
     param_ids = fields.One2many("sync.project.param", "project_id", copy=True)
-    text_param_ids = fields.One2many("sync.project.text", "project_id", copy=True)
-    secret_ids = fields.One2many("sync.project.secret", "project_id", copy=True)
     task_ids = fields.One2many("sync.task", "project_id", copy=True)
     task_count = fields.Integer(compute="_compute_task_count")
     trigger_cron_count = fields.Integer(
@@ -109,12 +94,31 @@ class SyncProject(models.Model):
     log_ids = fields.One2many("ir.logging", "sync_project_id")
     log_count = fields.Integer(compute="_compute_log_count")
 
+    # delete_my_code
     user_ids = fields.One2many('sync.partner', 'bot_id')
     users_count = fields.Integer(compute="_compute_users_count")
 
     token = fields.Char('Token')
 
+    messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
+
+    state = fields.Selection(string='State',
+                             selection=[("new", "New"), ("active_webhook", "Active Webhook"),
+                                        ("not_active_webhook", "Not active Webhook")],
+                             default="new",
+                             copy=False,
+                             help="Type is used to separate New, Active Webhook, Not active Webhook")
+
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+    operator_ids = fields.Many2many("res.users")
+
+    #image_icon_id = fields.Many2one('sync.image.icon')
+    def compute_image_default(self):
+        for context in self.eval_context_ids:
+            name_module = 'sync_' + context.name
+            image_path = "odoo-messenger-integration/{}/static/images/icon.png".format(name_module)
+            image_binary_data = open(image_path, 'rb').read()
+            self.write({'messenger_image': base64.b64encode(image_binary_data)})
 
     def copy(self, default=None):
         default = dict(default or {})
@@ -126,7 +130,26 @@ class SyncProject(models.Model):
         return super().unlink()
 
     def action_start_button(self):
-        return self.trigger_button_ids.start_button()
+        button = [b for b in self.trigger_button_ids if b.type_button == 'start'][0]
+        tmp = button.start_button()
+        self.state = 'active_webhook'
+        return tmp
+
+    def action_remove_button(self):
+        button = [b for b in self.trigger_button_ids if b.type_button == 'remove'][0]
+        button.start_button()
+        self.state = 'new'
+        self.active = False
+
+    def action_send_to_everyone(self):
+        # Відкрийте модальне вікно для створення нового запису в моделі model2
+        return {
+            'name': 'Написати повідомлення',
+            'view_mode': 'form',
+            'res_model': 'send.to.everyone',
+            'type': 'ir.actions.act_window',
+            'target': 'new',
+        }
 
     def _compute_eval_context_description(self):
         for r in self:
@@ -286,8 +309,8 @@ class SyncProject(models.Model):
 
             return (
                 record.sudo()
-                .env["ir.attachment"]
-                .search(
+                    .env["ir.attachment"]
+                    .search(
                     [
                         ("res_model", "=", record._name),
                         ("res_field", "=", fname),
@@ -321,7 +344,6 @@ class SyncProject(models.Model):
                 "LOG_ERROR": LOG_ERROR,
                 "LOG_CRITICAL": LOG_CRITICAL,
                 "params": params,
-                "texts": texts,
                 "webhooks": webhooks,
                 "user": self.env.user,
                 "trigger": job.trigger_name,
@@ -354,10 +376,8 @@ class SyncProject(models.Model):
         if self.eval_context_ids:
             start_time = time.time()
 
-            secrets = AttrDict()
-            for p in self.sudo().secret_ids:
-                secrets[p.key] = p.value
             eval_context_frozen = frozendict(eval_context)
+
             secrets = AttrDict()
             secrets['WHATSAPP_TWILIO_TOKEN'] = self.token
             secrets['VIBER_BOT_TOKEN'] = self.token
@@ -368,7 +388,7 @@ class SyncProject(models.Model):
                 print('ec =', ec)
                 method = ec.get_eval_context_method()
                 eval_context = dict(
-                    **eval_context, **method(secrets, eval_context_frozen)
+                    **eval_context, **method(self.token, eval_context_frozen)
                 )
             cleanup_eval_context(eval_context)
 
@@ -501,10 +521,6 @@ class SyncProject(models.Model):
     def parse_xml(self):
         self.env['sync.project.param'].sudo().with_context(active_test=False).search(
             [('project_id', '=', self.id)]).unlink()
-        self.env['sync.project.secret'].sudo().with_context(active_test=False).search(
-            [('project_id', '=', self.id)]).unlink()
-        self.env['sync.project.text'].sudo().with_context(active_test=False).search(
-            [('project_id', '=', self.id)]).unlink()
         self.env['sync.trigger.button'].sudo().with_context(active_test=False).search(
             [('sync_project_id', '=', self.id)]).unlink()
         self.env['sync.trigger.automation'].sudo().with_context(active_test=False).search(
@@ -513,14 +529,13 @@ class SyncProject(models.Model):
             [('sync_project_id', '=', self.id)]).unlink()
         self.env['sync.task'].sudo().with_context(active_test=False).search([('project_id', '=', self.id)]).unlink()
         self.param_ids.unlink()
-        self.text_param_ids.unlink()
-        self.secret_ids.unlink()
         self.task_ids.unlink()
         self.trigger_button_ids.unlink()
         # self.send_to_everyone_ids.unlink()
 
         if self.eval_context_ids:
             self.compute_image_default()
+            self._is_bot_active()
             name_module = 'sync_' + self.eval_context_ids.name
             path = "odoo-messenger-integration/{}/data/sync_project_data.xml".format(name_module)
             tree = ET.parse(path)
@@ -583,16 +598,6 @@ class SyncProject(models.Model):
     def check_bool(self, value):
         return value.lower() == 'true' or value == '1'
 
-    def action_send_to_everyone(self):
-        # Відкрийте модальне вікно для створення нового запису в моделі model2
-        return {
-            'name': 'Написати повідомлення',
-            'view_mode': 'form',
-            'res_model': 'send.to.everyone',
-            'type': 'ir.actions.act_window',
-            'target': 'new',
-        }
-
 
 class SyncProjectParamMixin(models.AbstractModel):
     _name = "sync.project.param.mixin"
@@ -627,6 +632,7 @@ class SyncProjectParam(models.Model):
     _name = "sync.project.param"
     _description = "Project Parameter"
     _inherit = "sync.project.param.mixin"
+
 
 
 class SyncProjectText(models.Model):

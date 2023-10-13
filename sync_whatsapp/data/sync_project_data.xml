@@ -173,7 +173,7 @@ def validate_email(email, partner, whatsapp_user_ref):
 
       if odoo_message_text:
         if odoo_message_text == "/start":
-          whatsapp_service_api.send_message(params.BOT_NUMBER, whatsapp_user_ref, "/email - вказати пошут")
+          whatsapp_service_api.send_message(params.BOT_NUMBER, whatsapp_user_ref, "/email - вказати пошту")
 
         elif "/email" in odoo_message_text:
             validate_email(odoo_message_text, partner, whatsapp_user_ref)

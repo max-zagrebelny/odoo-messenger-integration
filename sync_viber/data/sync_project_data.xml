@@ -169,22 +169,6 @@ def check_partner(partner):
   keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
 ]]></field>
     </record>
-    <record id="viber-bot-token--project-secret-parameter" model="sync.project.secret">
-        <field name="key">VIBER_BOT_TOKEN</field>
-        <field name="description" />
-        <field
-            name="url"
-            eval="'https://partners.viber.com/account/create-bot-account'"
-        />
-        <field name="project_id" ref="viber-integration--sync-project" />
-    </record>
-    <record id="bot-name--project-parameter" model="sync.project.param">
-        <field name="key">BOT_NAME</field>
-        <field name="value">Odoo</field>
-        <field name="description" />
-        <field name="url" eval="" />
-        <field name="project_id" ref="viber-integration--sync-project" />
-    </record>
     <record id="bot-avatar-url--project-parameter" model="sync.project.param">
         <field name="key">BOT_AVATAR_URL</field>
         <field name="value" />
@@ -212,16 +196,6 @@ def check_partner(partner):
         <field name="url" eval="" />
         <field name="project_id" ref="viber-integration--sync-project" />
     </record>
-    <record id="operator-ids--project-parameter" model="sync.project.param">
-        <field name="key">OPERATOR_IDS</field>
-        <field name="value">2</field>
-        <field name="description">
-            Comma-separated list of user ids that will added to Discuss chat on getting
-            message from new viber user
-        </field>
-        <field name="url" eval="" />
-        <field name="project_id" ref="viber-integration--sync-project" />
-    </record>
     <record id="setup--sync-task" model="sync.task">
         <field name="name">Setup</field>
         <field name="active" eval="True" />
@@ -237,7 +211,26 @@ def check_partner(partner):
     <record id="setup-webhook--manual-trigger" model="sync.trigger.button">
         <field name="trigger_name">SETUP_WEBHOOK</field>
         <field name="sync_task_id" ref="setup--sync-task" />
+        <field name="type_button">start</field>
     </record>
+
+    <record id="viber_task_remove" model="sync.task">
+        <field name="name">Remove</field>
+        <field name="active" eval="True" />
+        <field name="project_id" ref="viber-integration--sync-project" />
+        <field
+            name="code"
+        ><![CDATA[def handle_button():
+    viber_api.unset_webhook(webhooks.VIBER)
+        ]]></field>
+    </record>
+    <record id="viber_trigger_button_remove" model="sync.trigger.button">
+        <field name="trigger_name">REMOVE_WEBHOOK_VIBER</field>
+        <field name="name">Remove webhook viber</field>
+        <field name="sync_task_id" ref="viber_task_remove"/>
+        <field name="type_button">remove</field>
+    </record>
+
     <record id="process-viber-events--sync-task" model="sync.task">
         <field name="name">Process Viber Events</field>
         <field name="active" eval="True" />
@@ -258,7 +251,7 @@ def check_partner(partner):
     return
 
   if isinstance(vrequest, viber_requests.ViberConversationStartedRequest):
-    start_text = f"Вітаю, я {params.BOT_NAME}. Ми дуже щасливі бачити Вас в списку наших партнерів :). Щоб почати роботу з ботом введіть команду /start."
+    start_text = f"Вітаю, я {bot.name}. Ми дуже щасливі бачити Вас в списку наших партнерів :). Щоб почати роботу з ботом введіть команду /start."
     viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=start_text)])
     return
 
@@ -271,7 +264,7 @@ def check_partner(partner):
           "comment": str(err),
         }
     return {
-      "name": data["name"] +  "[" + params.BOT_NAME + "]",
+      "name": data["name"] +  "[" + bot.name + "]",
       "lang": get_lang(env, data.get("language", "").replace("-", "_")).code,
       "image_1920": url2base64(data.get("avatar")),
       "comment": str(data),
@@ -279,13 +272,13 @@ def check_partner(partner):
   if isinstance(vrequest, viber_requests.ViberMessageRequest):
     partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
     bot_id = bot.id
-    partner, is_new_partner = multi_livechat.get_partner(VIBER_PARTNER, viber_user_ref, bot_id, partner_vals, partner_kwargs)
+    partner, is_new_partner = get_partner_with_create(bot_id, viber_user_ref, partner_vals, partner_kwargs)
 
     vals = partner_vals(**partner_kwargs)
     avatar = vals["image_1920"]
     if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
-      operators_user_ids = list(map(int, params.OPERATOR_IDS.split(",")))
+      operators_user_ids = bot.operator_ids.ids
       operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
       partner_ids = [partner.id] + operators_partner_ids
       channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, bot_id)
@@ -397,7 +390,7 @@ def process_message(message):
         return
 
     external_user_ref = channel_link.external
-    partner,is_new = multi_livechat.get_partner(VIBER_PARTNER, external_user_ref, None, None, bot_id)
+    partner = get_partner(bot_id, external_user_ref)
     check_partner(partner)
 
     if message.author_id.search_links(VIBER_PARTNER, bot_id) or message.author_id.id == multi_livechat.odoobot_id:
@@ -469,14 +462,12 @@ def check_partner(partner):
             name="code"
         ><![CDATA[
 def handle_db(records):
-  if records.project_id.id != project_id:
+  if records.project_id.id != bot.id:
     return
   channel_links = env["sync.link"].search([('bot_id', '=', bot.id),('relation', '=', 'VIBER_CHANNEL')])
   if not channel_links:
       return
   external_user_refs = [channel.external for channel in channel_links]
-  message = [keyboard_message]
-
 
   if records.rich_media:
     message.insert(0, rich_media)
