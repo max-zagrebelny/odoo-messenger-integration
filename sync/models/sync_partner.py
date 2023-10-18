@@ -37,10 +37,12 @@ class SyncPartner(models.Model):
 
     def get_partner_with_create(self, bot_id, external_id, callback_func=None, callback_kwargs=None):
         ''' If not exist create one'''
+        print('------------------')
         links = self.get_partner(bot_id, external_id)
         if not links and callback_func and callback_kwargs:
             vals = callback_func(**callback_kwargs)
-            print(f"user vals name: {vals['name']}")
+            vals['type_messenger'] = self.env['sync.project'].browse(bot_id).eval_context_ids.name
+            print(f"user vals type: {vals['type_messenger']}")
             partner = self.env["res.partner"].sudo().create(vals)
             self.set_user(partner.id, bot_id, external_id)
             return partner, True
@@ -60,31 +62,16 @@ class SyncPartner(models.Model):
         if user.state_user == 'phone' and state == 'None':
             child_partner = self.env['res.partner'].browse(partner_id)
             print(child_partner)
-            partners = self.env['res.partner'].search(
-                [('phone', '=', child_partner.phone),('id', '!=', partner_id)])
-            print(partners)
-            is_parent_exist = False
-            parent_part_id = None
-            for p in partners:
-                if p.parent_id:
-                    is_parent_exist = True
-                    parent_part_id = p.parent_id
-                    break
-            if not is_parent_exist:
+            parent = self.env['res.partner'].search(
+                [('phone', '=', child_partner.phone),('type_messenger', '=', 'none')])
+
+            if not parent:
                 list_name = child_partner.name.split(' ')
                 list_name.pop()
                 name = ''.join(list_name)
-                parent_partner = self.env['res.partner'].create({'name': name, 'phone': child_partner.phone})
-                parent_part_id = parent_partner.id
+                parent = self.env['res.partner'].create({'name': name, 'phone': child_partner.phone})
 
-            for p in partners:
-                p.parent_id = parent_part_id
-            child_partner.parent_id = parent_part_id
-            # for p in partners:
-            #     if not p.parent_id:
-            #         child_partner.parent_id = p.id
-            #         print(p)
-            #         break
+            child_partner.parent_id = parent.id
         user.state_user = state
 
     def get_state(self, partner_id, bot_id):

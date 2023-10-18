@@ -30,6 +30,9 @@
         "views/sync_project_views.xml",
         "views/sync_link_views.xml",
         "views/send_to_everyone.xml",
+
+        "views/res_partner_views.xml",
+
         "wizard/sync_make_module_views.xml",
         "data/queue_job_function_data.xml",
     ],

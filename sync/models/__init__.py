@@ -16,3 +16,4 @@ from . import sync_link
 from . import base
 from . import sync_partner
 from . import send_to_everyone
+from . import res_partner

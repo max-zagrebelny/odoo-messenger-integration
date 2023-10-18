@@ -47,7 +47,7 @@ class SyncProject(models.Model):
     _description = "Sync Project"
 
     name = fields.Char(
-        "Name", help="e.g. Legacy Migration or eCommerce Synchronization", required=True
+        "Name", help="Your bot name", required=True, default='Enter bot name'
     )
     active = fields.Boolean(default=False)
     # Deprecated, please use eval_context_ids
@@ -97,8 +97,7 @@ class SyncProject(models.Model):
     messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
 
     state = fields.Selection(string='State',
-                             selection=[("new", "New"), ("active_webhook", "Active Webhook"),
-                                        ("not_active_webhook", "Not active Webhook")],
+                             selection=[("new", "New"), ("active_webhook", "Active Webhook")],
                              default="new",
                              copy=False,
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
@@ -116,6 +115,12 @@ class SyncProject(models.Model):
                 image_binary_data = open(image_path, 'rb').read()
                 self.update({'messenger_image': base64.b64encode(image_binary_data)})
 
+    @api.constrains('name')
+    def _check_name(self):
+        for record in self:
+            if len(record.name.split(' ')) != 1:
+                raise UserError('Field name must be without spaces')
+
     def copy(self, default=None):
         default = dict(default or {})
         default["active"] = False
@@ -126,6 +131,7 @@ class SyncProject(models.Model):
         return super().unlink()
 
     def action_start_button(self):
+        print('active = ',self.active)
         button = [b for b in self.trigger_button_ids if b.type_button == 'start'][0]
         tmp = button.start_button()
         self.state = 'active_webhook'

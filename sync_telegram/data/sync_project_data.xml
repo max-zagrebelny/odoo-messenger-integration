@@ -14,7 +14,6 @@
     </record>-->
 
     <record id="telegram_project" model="sync.project">
-        <field name="name">Your bot name</field>
         <field
             name="eval_context_ids"
             eval="ref('sync_project_context_telegram')"
@@ -170,6 +169,8 @@ def handle_webhook(httprequest):
     telegram.sendMessage(telegram_user_ref, "Напишіть ваш номер телефону з командою \nНаприклад 380664553087",reply_markup=telegram.delKeyBoard())
     set_state(partner.id,bot_id,'phone')
     return
+  elif message.text == "Зв'язатися з оператором":
+    conn_with_operator = True
   elif get_state(partner.id, bot_id) == 'mail':
     mail = message.text
     if not re_match('[^@]+@[^@]+\.[^@]+',mail):
@@ -188,8 +189,6 @@ def handle_webhook(httprequest):
         telegram.sendMessage(telegram_user_ref, "Дякую дані збережено", reply_markup=telegram.addKeyBoard(get_right_buttons(partner, telegram_user_ref, bot_id)))
         set_state(partner.id,bot_id,'None')
         return
-  elif message.text == "Зв'язатися з оператором":
-    conn_with_operator = True
 
   partner_ids = [partner.id] + operators_partner_list
   is_new_channel = False
