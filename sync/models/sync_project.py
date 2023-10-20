@@ -5,6 +5,7 @@
 
 import base64
 import logging
+import os
 
 import xml.etree.ElementTree as ET  # для загрузки контексту
 
@@ -58,6 +59,7 @@ class SyncProject(models.Model):
     eval_context_ids = fields.Many2one(
         "sync.project.context", string="Evaluation contexts", required=True
     )
+
     eval_context_description = fields.Text(compute="_compute_eval_context_description")
 
     common_code = fields.Text(
@@ -391,6 +393,7 @@ class SyncProject(models.Model):
             start_time = time.time()
 
             eval_context_frozen = frozendict(eval_context)
+
             print("self.eval_context_ids = ", self.eval_context_ids)
             for ec in self.eval_context_ids:
                 print('ec =', ec)
@@ -641,6 +644,34 @@ class SyncProjectParam(models.Model):
     _name = "sync.project.param"
     _description = "Project Parameter"
     _inherit = "sync.project.param.mixin"
+
+
+
+class SyncProjectText(models.Model):
+    _name = "sync.project.text"
+    _description = "Project Text Parameter"
+    _inherit = "sync.project.param.mixin"
+
+    value = fields.Text("Value", translate=True)
+
+
+class SyncProjectSecret(models.Model):
+    _name = "sync.project.secret"
+    _description = "Project Secret Parameter"
+    _inherit = "sync.project.param.mixin"
+
+    value = fields.Char(groups="sync.sync_group_manager")
+
+    def action_show_value(self):
+        self.ensure_one()
+        return {
+            "name": _("Secret Parameter"),
+            "type": "ir.actions.act_window",
+            "view_mode": "form",
+            "res_model": "sync.project.secret",
+            "target": "new",
+            "res_id": self.id,
+        }
 
 
 # see https://stackoverflow.com/a/14620633/222675
