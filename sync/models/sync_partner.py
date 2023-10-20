@@ -63,14 +63,14 @@ class SyncPartner(models.Model):
             child_partner = self.env['res.partner'].browse(partner_id)
             print(child_partner)
             parent = self.env['res.partner'].search(
-                [('phone', '=', child_partner.phone),('type_messenger', '=', 'none')])
+                [('phone', '=', child_partner.phone), ('type_messenger', '=', 'none')])
 
             if not parent:
-                list_name = child_partner.name.split(' ')
+                list_name = child_partner.name.split('[')
                 list_name.pop()
                 name = ''.join(list_name)
                 parent = self.env['res.partner'].create({'name': name, 'phone': child_partner.phone})
-
+            print(parent)
             child_partner.parent_id = parent.id
         user.state_user = state
 

@@ -7,7 +7,7 @@
         <field name="display_name">Viber</field>
     </record>
     <record id="viber-integration--sync-project" model="sync.project">
-        <field name="name">Viber Integration</field>
+        <field name="name">Viber_Integration</field>
         <field
             name="eval_context_ids"
             eval="ref('sync_project_context_viber')"

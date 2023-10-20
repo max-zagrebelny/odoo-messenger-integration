@@ -32,6 +32,7 @@
         "views/send_to_everyone.xml",
 
         "views/res_partner_views.xml",
+        "views/mail_message.xml",
 
         "wizard/sync_make_module_views.xml",
         "data/queue_job_function_data.xml",

@@ -10,6 +10,8 @@ import xml.etree.ElementTree as ET  # для загрузки контексту
 
 from pytz import timezone
 
+from odoo.addons.queue_job.job import FAILED
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT, frozendict, html2plaintext
@@ -47,14 +49,14 @@ class SyncProject(models.Model):
     _description = "Sync Project"
 
     name = fields.Char(
-        "Name", help="Your bot name", required=True, default='Enter bot name'
+        "Name", help="Your bot name", required=True, default='Enter_bot_name'
     )
     active = fields.Boolean(default=False)
     # Deprecated, please use eval_context_ids
     # TODO: delete in v17 release
     eval_context = fields.Selection([], string="Evaluation context")
     eval_context_ids = fields.Many2one(
-        "sync.project.context", string="Evaluation contexts"
+        "sync.project.context", string="Evaluation contexts", required=True
     )
     eval_context_description = fields.Text(compute="_compute_eval_context_description")
 
@@ -93,7 +95,7 @@ class SyncProject(models.Model):
     user_ids = fields.One2many('sync.partner', 'bot_id')
     users_count = fields.Integer(compute="_compute_users_count")
 
-    token = fields.Char('Token')
+    token = fields.Char('Token', required=True)
     messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
 
     state = fields.Selection(string='State',
@@ -103,7 +105,7 @@ class SyncProject(models.Model):
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
 
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
-    operator_ids = fields.Many2many("res.users")
+    operator_ids = fields.Many2many("res.users",required=True)
 
     def compute_image_default(self):
         for record in self:
@@ -131,10 +133,16 @@ class SyncProject(models.Model):
         return super().unlink()
 
     def action_start_button(self):
-        print('active = ',self.active)
+
         button = [b for b in self.trigger_button_ids if b.type_button == 'start'][0]
         tmp = button.start_button()
-        self.state = 'active_webhook'
+
+        self.env.cr.commit()
+        if self.env[tmp['res_model']].browse(tmp['res_id']).state != FAILED:
+            self.state = 'active_webhook'
+        else:
+            self.active = True
+
         return tmp
 
     def action_remove_button(self):

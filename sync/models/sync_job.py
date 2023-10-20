@@ -83,8 +83,11 @@ class SyncJob(models.Model):
             states = [q.state for q in jobs.mapped("queue_job_id")]
             print('states =', states)
             levels = {log.level for log in jobs.mapped("log_ids")}
+            print('len(jobs.mapped("logs_ids")) = ', jobs.mapped("log_ids"))
+            print('levels = ',levels)
             computed_state = DONE
             has_errors = any(lev in [LOG_CRITICAL, LOG_ERROR] for lev in levels)
+            print('has_errors = ',has_errors)
             has_warnings = any(lev == LOG_WARNING for lev in levels)
             for s in [FAILED, STARTED, ENQUEUED, PENDING]:
                 if any(s == ss for ss in states):
