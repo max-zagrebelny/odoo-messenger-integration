@@ -1,4 +1,4 @@
-                                       /** @odoo-module **/
+/** @odoo-module **/
 
 import { clear } from "@mail/model/model_field_command";
 import { one } from "@mail/model/model_field";

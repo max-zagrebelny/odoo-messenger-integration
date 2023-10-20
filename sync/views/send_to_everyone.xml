@@ -5,7 +5,7 @@
             <field name="res_model">send.to.everyone</field>
             <field name="view_mode">tree,form</field>
     </record>
-    <record id="send_to_everyone_action" model="ir.actions.act_window">
+    <record id="send_to_everyone_viber_action" model="ir.actions.act_window">
             <field name="name">Send</field>
             <field name="res_model">send.to.everyone.viber</field>
             <field name="view_mode">tree,form</field>
@@ -19,14 +19,13 @@
                 <sheet>
                     <group>
                         <field name="msg" />
-                        <field name="project_id" invisible="1"/>
                     </group>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <record id="send_to_everyone_view_form" model="ir.ui.view">
+    <record id="send_to_everyone_view_viber_form" model="ir.ui.view">
         <field name="name">send.to.everyone.viber.form</field>
         <field name="model">send.to.everyone.viber</field>
         <field name="arch" type="xml">
@@ -34,7 +33,6 @@
                 <sheet>
                     <group>
                         <field name="msg" />
-                        <field name="project_id" invisible="1"/>
                         <field name="rich_media"/>
                     </group>
                 </sheet>

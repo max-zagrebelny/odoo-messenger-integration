@@ -14,7 +14,7 @@
     "support": "help@itpp.dev",
     "website": "https://sync_studio.t.me/",
     "license": "Other OSI approved licence",  # MIT
-    "depends": ["base_automation", "mail", "queue_job"],
+    "depends": ["base_automation", "mail", "queue_job", "base"],
     "external_dependencies": {"python": [], "bin": []},
     "data": [
         "security/sync_groups.xml",
@@ -30,6 +30,7 @@
         "views/sync_project_views.xml",
         "views/sync_link_views.xml",
         "views/send_to_everyone.xml",
+        "views/chatter_topbar.xml",
         "wizard/sync_make_module_views.xml",
         "data/queue_job_function_data.xml",
     ],

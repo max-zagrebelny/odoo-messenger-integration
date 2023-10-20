@@ -98,7 +98,7 @@ class SyncProject(models.Model):
     user_ids = fields.One2many('sync.partner', 'bot_id')
     users_count = fields.Integer(compute="_compute_users_count")
 
-    token = fields.Char('Token')
+    token = fields.Char('Token', required=True)
 
     messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
 
@@ -110,7 +110,7 @@ class SyncProject(models.Model):
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
 
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
-    operator_ids = fields.Many2many("res.users")
+    operator_ids = fields.Many2many("res.users", required=True)
 
     def compute_image_default(self):
         for record in self:
