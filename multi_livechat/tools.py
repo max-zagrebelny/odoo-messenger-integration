@@ -63,15 +63,6 @@ def get_multi_livechat_eval_context(env, channel_type, eval_context):
             record = env[model].sudo().create(vals)
             link = record.set_link(relation, ref, bot_id)
 
-            if record_message:
-                record.message_post(
-                    body=record_message,
-                    author_id=odoobot_id,
-                    message_type="comment",
-                    subtype_xmlid="mail.mt_comment",
-                )
-            log("Record created: %s" % record)
-
         return link.odoo, is_new
 
     def get_channel_url(channel):

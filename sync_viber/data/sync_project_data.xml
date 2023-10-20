@@ -7,7 +7,6 @@
         <field name="display_name">Viber</field>
     </record>
     <record id="viber-integration--sync-project" model="sync.project">
-        <field name="name">Viber_Integration</field>
         <field
             name="eval_context_ids"
             eval="ref('sync_project_context_viber')"
@@ -151,16 +150,6 @@ notification = {
 rich_media = viber_messages.RichMediaMessage(rich_media=notification, min_api_version=6)
 keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
 
-def validate_email(email, partner, viber_user_ref):
-  email = email.replace("/email", "", 1).strip()
-
-  if valid.match(r"[^@]+@[^@]+\.[^@]+", email):
-    partner.write({"email" : email})
-    check_partner(partner)
-    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Дякую, дані збрежено."), keyboard_message])
-  else:
-    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Неправильно вказана пошта, повторіть спробу."), keyboard_message])
-
 def check_partner(partner):
   if not partner.email:
     keyboard["Buttons"].append(email)
@@ -237,7 +226,8 @@ def check_partner(partner):
         <field name="project_id" ref="viber-integration--sync-project" />
         <field
             name="code"
-        ><![CDATA[def handle_webhook(httprequest):
+        ><![CDATA[
+def handle_webhook(httprequest):
   data = json.loads(httprequest.data.decode("utf-8"))
   log("Raw data: %s" % data, LOG_DEBUG)
 
@@ -272,18 +262,23 @@ def check_partner(partner):
   if isinstance(vrequest, viber_requests.ViberMessageRequest):
     partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
     bot_id = bot.id
-    partner, is_new_partner = get_partner_with_create(bot_id, viber_user_ref, partner_vals, partner_kwargs)
+    partner, is_new_partner = get_partner_with_create(bot_id, viber_user_ref, callback_func=partner_vals, callback_kwargs=partner_kwargs)
 
-    vals = partner_vals(**partner_kwargs)
-    avatar = vals["image_1920"]
     if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
       operators_user_ids = bot.operator_ids.ids
       operators_partner_ids = env.user.browse(operators_user_ids).mapped("partner_id").ids
       partner_ids = [partner.id] + operators_partner_ids
-      channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, bot_id)
+      CONN_WITH_OPERATOR = True if get_link(VIBER_CHANNEL, viber_user_ref, bot_id) else False
+      channels = None
+      if data['message']['type'] == 'text':
+        if vrequest.message.text == "/talk_with_operator":
+          CONN_WITH_OPERATOR = True
+      if CONN_WITH_OPERATOR:
+        channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, bot_id)
 
-      if params.CHAT_MODEL != "res.partner":
+
+      if params.CHAT_MODEL != "res.partner" and CONN_WITH_OPERATOR:
         def thread_vals(partner):
           return {
             "name": partner.name,
@@ -310,7 +305,9 @@ def check_partner(partner):
       odoo_message_text = None
 
       if data['message']['type'] == 'contact':
+        set_state(partner.id,bot_id,'phone')
         partner.write({"phone": vrequest.message.contact.phone_number})
+        set_state(partner.id,bot_id, 'None')
         check_partner(partner)
         viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Дякую, дані збрежено."), keyboard_message])
 
@@ -318,20 +315,22 @@ def check_partner(partner):
 
         if vrequest.message.text == "/user_data":
           check_partner(partner)
-          email_text = "Напишіть вашу електронну адресу з командою /email. Наприклад, /email max@gmail.com."
+          email_text = "Напишіть вашу електронну адресу. Наприклад, max@gmail.com."
+          set_state(partner.id,bot_id,'mail')
           viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=email_text), keyboard_message])
-
-        elif "/email" in vrequest.message.text:
-          validate_email(vrequest.message.text, partner, viber_user_ref)
-
+        elif get_state(partner.id, bot_id) == 'mail':
+            email = vrequest.message.text
+            validate_email(email, partner, viber_user_ref)
         elif vrequest.message.text == "/start":
           check_partner(partner)
           email_text = "Будь ласка, представте деякі особисті дані для продовження"
           viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=email_text), keyboard_message])
-        else:
+        elif CONN_WITH_OPERATOR:
           odoo_message_text = vrequest.message.text
           for channel in channels:
             message_post(is_new_thread, channel, odoo_message_text, author=partner.id)
+        else:
+            return
 
       elif data['message']['type'] in ('picture', 'video', 'document'):
         bin_data = url2bin(vrequest.message.media)
@@ -352,6 +351,14 @@ def check_partner(partner):
     odoo_message_text = str(data)
     log("type=%s" % type2str(vrequest))
 
+def validate_email(email, partner, viber_user_ref):
+  if re_match(r"[^@]+@[^@]+\.[^@]+", email):
+    partner.write({"email" : email})
+    check_partner(partner)
+    set_state(partner.id, bot.id, 'None')
+    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Дякую, дані збрежено."), keyboard_message])
+  else:
+    viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text="Неправильно вказана пошта, повторіть спробу."), keyboard_message])
 
 def message_post(is_new, *args, **kwargs):
     # TODO: move this code to main sync module
@@ -361,6 +368,7 @@ def message_post(is_new, *args, **kwargs):
       add_job('message_post')(*args, **kwargs)
     else:
       multi_livechat.message_post(*args, **kwargs)
+
 ]]></field>
     </record>
     <record id="viber--webhook-trigger" model="sync.trigger.webhook">
@@ -390,7 +398,7 @@ def process_message(message):
         return
 
     external_user_ref = channel_link.external
-    partner = get_partner(bot_id, external_user_ref)
+    partner, is_new = get_partner_with_create(bot_id, external_user_ref)
     check_partner(partner)
 
     if partner.id == message.author_id.id or message.author_id.id == multi_livechat.odoobot_id:
@@ -434,13 +442,6 @@ def send_viber_photo(external_user_ref, media):
 
 def send_viber_file(external_user_ref, media, size, file_name):
     viber_api.send_messages(external_user_ref, [viber_messages.FileMessage(media=media, size=size, file_name=file_name), keyboard_message])
-
-def check_partner(partner):
-  if not partner.email:
-    keyboard["Buttons"].append(email)
-  if not partner.phone:
-    keyboard["Buttons"].append(phone)
-  keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
 
 ]]></field>
     </record>

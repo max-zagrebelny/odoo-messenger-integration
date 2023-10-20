@@ -18,10 +18,11 @@
     ],
     "assets": {
         "web.assets_backend": [
-            "sync_viber/static/src/models/discuss/discuss.js",
-            "sync_viber/static/src/models/discuss_sidebar_category/discuss_sidebar_category.js",
-            "sync_viber/static/src/models/discuss_sidebar_category_item/discuss_sidebar_category_item.js",
-
+            "sync_viber/static/src/models/discuss.js",
+            "sync_viber/static/src/models/discuss_sidebar_category.js",
+            "sync_viber/static/src/models/discuss_sidebar_category_item.js",
+            "sync_viber/static/src/components/Topbar/topbar.xml",
+            "sync_viber/static/src/models/chatter_topbar.js",
         ],
     },
     "demo": [],

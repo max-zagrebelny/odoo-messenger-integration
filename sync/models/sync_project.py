@@ -107,7 +107,7 @@ class SyncProject(models.Model):
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
 
     send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
-    operator_ids = fields.Many2many("res.users",required=True)
+    operator_ids = fields.Many2many("res.users", required=True)
 
     def compute_image_default(self):
         for record in self:
