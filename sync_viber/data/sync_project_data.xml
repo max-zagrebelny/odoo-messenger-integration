@@ -3,7 +3,7 @@
      License MIT (https://opensource.org/licenses/MIT). -->
 <odoo>
     <record id="sync_project_context_viber" model="sync.project.context">
-        <field name="name">viber</field>
+        <field name="name">viber</field >
         <field name="display_name">Viber</field>
     </record>
     <record id="viber-integration--sync-project" model="sync.project">
@@ -14,7 +14,6 @@
         <field
             name="common_code"
         ><![CDATA[
-
 VIBER_PARTNER="VIBER_PARTNER"
 VIBER_CHANNEL="VIBER_CHANNEL"
 VIBER_THREAD="VIBER_THREAD"

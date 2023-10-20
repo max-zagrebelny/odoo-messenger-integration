@@ -44,7 +44,9 @@ class SyncPartner(models.Model):
             vals['type_messenger'] = self.env['sync.project'].browse(bot_id).eval_context_ids.name
             print(f"user vals type: {vals['type_messenger']}")
             partner = self.env["res.partner"].sudo().create(vals)
+            print(f"user : {partner.name}")
             self.set_user(partner.id, bot_id, external_id)
+            print("set user")
             return partner, True
         return links, False
 

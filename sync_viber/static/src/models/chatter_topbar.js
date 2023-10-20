@@ -9,7 +9,7 @@ registerPatch({
     recordMethods: {
         async onClick() {
           this.chatter.thread.open();
-          let otherChannelMembers = this.chatter.thread.suggestedRecipientInfoList;
+          let otherChannelMembers = this.chatter.thread;
           console.log(otherChannelMembers);
         },
     },
