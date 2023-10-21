@@ -97,7 +97,8 @@ class SyncProject(models.Model):
     user_ids = fields.One2many('sync.partner', 'bot_id')
     users_count = fields.Integer(compute="_compute_users_count")
 
-    token = fields.Char('Token', required=True, default="1")
+    token = fields.Char('Token', required=True, default='Token')
+
     messenger_image = fields.Binary(string="Messenger Image", compute="compute_image_default")
 
     state = fields.Selection(string='State',
