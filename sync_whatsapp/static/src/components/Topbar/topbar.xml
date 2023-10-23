@@ -2,11 +2,12 @@
 <templates xml:space="preserve">
     <t t-inherit="mail.ChatterTopbar" t-inherit-mode="extension">
         <xpath expr="//div[contains(@class, 'o_ChatterTopbar_controllers')]" position="after">
-            <button class="o_ChatterTopbar_button o_ChatterTopbar_buttonViber btn me-2 btn-light"
+            <button class="o_ChatterTopbar_button o_ChatterTopbar_buttonWhatsapp btn me-2 btn-light"
                     type="button"
-                    t-on-click="chatterTopbar.onClickViber"
+                    t-on-click="chatterTopbar.onClickWhatsapp"
+                    data-messenger="multi_livechat_whatsapp"
             >
-                <img src="/sync_viber/static/images/icon.png" style="width: 30px; height: 30px;"/>
+                <img src="/sync_whatsapp/static/images/icon.png" style="width: 32px; height: 32px;"/>
             </button>
         </xpath>
     </t>

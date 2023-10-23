@@ -7,7 +7,7 @@ import '@mail/models/chatter_topbar';
 registerPatch({
     name: 'ChatterTopbar',
     recordMethods: {
-        async onClickViber() {
+        async onClickTelegram() {
              let otherFollowers = this.chatter.thread.followers
                     .filter(follower => follower.partner.id !== this.messaging.currentPartner.id);
 
@@ -35,7 +35,7 @@ registerPatch({
 
             let channels = this.messaging.allCurrentClientThreads.map(thread => thread.channel);
             channels = channels.filter((channel) => {
-               return channel.channel_type === 'multi_livechat_viber';
+               return channel.channel_type === 'multi_livechat_telegram';
             });
 
             let matchingChannels = channels.filter(channel => {

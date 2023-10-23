@@ -17,6 +17,8 @@
             "sync_whatsapp/static/src/models/discuss/discuss.js",
             "sync_whatsapp/static/src/models/discuss_sidebar_category/discuss_sidebar_category.js",
             "sync_whatsapp/static/src/models/discuss_sidebar_category_item/discuss_sidebar_category_item.js",
+            "sync_whatsapp/static/src/components/Topbar/topbar.xml",
+            "sync_whatsapp/static/src/models/chatter_topbar.js",
         ],
     },
     "demo": [],
