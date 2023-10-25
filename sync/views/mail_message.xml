@@ -5,7 +5,7 @@
         <field name="name">all.mail.message.tree</field>
         <field name="model">mail.message</field>
         <field name="arch" type="xml">
-            <tree>
+            <tree create="False" delete="False" action="action_open_channel" type="object">
                 <field name="body" />
                 <field name="model" />
                 <field name="res_id" />
@@ -20,8 +20,12 @@
         <field name="model">mail.message</field>
         <field name="arch" type="xml">
             <search>
+                <filter string="Author from Telegram" name="author_telegram" domain="[('author_id.type_messenger', '=', 'telegram')]"/>
+                <filter string="Author from Viber" name="author_viber" domain="[('author_id.type_messenger', '=', 'viber')]"/>
+                <filter string="Author from Whatsapp" name="author_whatsapp" domain="[('author_id.type_messenger', '=', 'whatsapp')]"/>
                 <field name="author_id" />
                 <field name="body" />
+                <field name="res_id"/>
                 <separator/>
                 <group expand="1" string="Group By Authors">
                     <filter string="Authors" name="author" context="{'group_by':'author_id', 'residual_visible':True}"/>
@@ -35,7 +39,7 @@
         <field name="res_model">mail.message</field>
         <field name="view_mode">tree</field>
         <field name="search_view_id" ref="mail_message_view_search" />
-        <field name="domain">[('model', '=', 'mail.channel')]</field>
+        <field name="domain">['&amp;',('model', '=', 'mail.channel'), ('author_id', '!=', 2)]</field> <!--Виключаємо OdooBot-->
     </record>
 
     <menuitem
