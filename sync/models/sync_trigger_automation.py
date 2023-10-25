@@ -8,6 +8,7 @@ from odoo import api, fields, models
 _logger = logging.getLogger(__name__)
 
 ODOO_CHANNEL_TYPES = ["chat", "livechat", "group"]
+
 class SyncTriggerAutomation(models.Model):
     _name = "sync.trigger.automation"
     _inherit = ["sync.trigger.mixin", "sync.trigger.mixin.actions"]
@@ -39,7 +40,7 @@ class SyncTriggerAutomation(models.Model):
                     % self.automation_id
                 )
                 return
-            if self.is_record_mail_message(records):
+            if self.is_record_mail_message(records) and self.is_message_from_operators(records):
                 print(self.sync_task_id)
                 self.sync_task_id.start(self, args=(records,), with_delay=True)
 
@@ -51,6 +52,17 @@ class SyncTriggerAutomation(models.Model):
                 if channel and channel.channel_type not in ODOO_CHANNEL_TYPES:
                     return True
             return False
+        else:
+            return True
+
+    def is_message_from_operators(self, records):
+        # Перевірка повідомлення від оператора чи від користувача мессенджера
+        # Якщо повідомлення від користувача тоді повертає False
+        if records._name == "mail.message":
+            if records.author_id.type_messenger == 'none':
+                return True
+            else:
+                return False
         else:
             return True
 
