@@ -42,7 +42,7 @@ registerPatch({
                 return this._super();
             },
         },
-         hasSettingsCommand: {
+        hasSettingsCommand: {
             compute() {
                 return this.channel.channel_type === 'multi_livechat_viber';
             },

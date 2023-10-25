@@ -5,7 +5,6 @@
         <field name="display_name">WhatsApp (Twilio)</field>
     </record>
     <record id="whatsapp-twilio-integration--sync-project" model="sync.project">
-        <field name="name">WhatsApp (Twilio) Integration</field>
         <field
             name="eval_context_ids"
             eval="ref('sync_project_context_whatsapp_twilio')"

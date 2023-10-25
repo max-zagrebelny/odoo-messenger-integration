@@ -21,9 +21,6 @@
             "multi_livechat/static/src/models/discuss.js",
             "multi_livechat/static/src/models/thread.js",
             "multi_livechat/static/src/models/messaging.js",
-            # demo
-            "multi_livechat/static/src/demo/models/discuss.js",
-            "multi_livechat/static/src/demo/models/discuss_sidebar_category.js",
             "multi_livechat/static/src/components/discuss_sidebar/discuss_sidebar.xml",
         ],
     },
