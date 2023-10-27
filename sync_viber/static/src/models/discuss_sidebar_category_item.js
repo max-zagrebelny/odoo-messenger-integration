@@ -8,14 +8,9 @@ import { registerPatch } from "@mail/model/model_core";
 registerPatch({
     name: 'DiscussSidebarCategoryItem',
     fields: {
-        avatarUrl: {
+        hasSettingsCommand: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_viber') {
-                    if (this.channel.correspondent) {
-                        return this.channel.correspondent.avatarUrl;
-                    }
-                }
-                return this._super();
+                return this.channel.channel_type === 'multi_livechat_viber';
             },
         },
         categoryCounterContribution: {
@@ -34,22 +29,9 @@ registerPatch({
                 return this._super();
             },
         },
-        hasThreadIcon: {
-            compute() {
-                if (this.channel.channel_type === 'multi_livechat_viber') {
-                    return true;
-                }
-                return this._super();
-            },
-        },
-        hasSettingsCommand: {
-            compute() {
-                return this.channel.channel_type === 'multi_livechat_viber';
-            },
-        },
         hasUnpinCommand: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_viber') {
+                if (this.channel.channel_type == 'multi_livechat_viber') {
                     return !this.channel.localMessageUnreadCounter;
                 }
                 return this._super();

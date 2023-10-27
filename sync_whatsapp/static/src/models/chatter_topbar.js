@@ -8,10 +8,19 @@ registerPatch({
     name: 'ChatterTopbar',
     recordMethods: {
         async onClickWhatsapp() {
-             let otherFollowers = this.chatter.thread.followers
-                    .filter(follower => follower.partner.id !== this.messaging.currentPartner.id);
+             let partners = [];
+             let otherFollowers = this.chatter.thread.followers;
 
-             if (otherFollowers.length === 0){
+             if(this.chatter.thread.suggestedRecipientInfoList) {
+                partners = this.chatter.thread.suggestedRecipientInfoList.map((recipient) => recipient.partner)
+             }
+
+             partners = partners.concat(otherFollowers.map(follower => follower.partner));
+             partners = partners.filter((partner) => {
+                return partner.user ? !partner.user.isInternalUser : true;
+             });
+
+             if (partners.length === 0){
                 this.messaging.notify({
                     type: 'warning',
                     message: this.env._t("Followers list is empty"),
@@ -19,7 +28,7 @@ registerPatch({
                 return;
              }
 
-             let partners = otherFollowers.map((follower) => follower.partner.id);
+             partners = partners.map((partner) => partner.id);
 
              let partnerIds = await this.messaging.rpc({
                 model: 'res.partner',
@@ -54,6 +63,7 @@ registerPatch({
             matchingChannels.forEach(channel => {
                 channel.thread.open();
             });
+
         },
     },
 });
