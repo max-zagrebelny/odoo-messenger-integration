@@ -1,7 +1,7 @@
 # Copyright 2020-2021 Ivan Yelizariev <https://twitter.com/yelizariev>
 # Copyright 2021 Denis Mudarisov <https://github.com/trojikman>
 # License MIT (https://opensource.org/licenses/MIT).
-
+import json
 import uuid
 
 from odoo import api, fields, models
@@ -34,14 +34,22 @@ class SyncTriggerWebhook(models.Model):
         return vals
 
     def start(self):
+
         # delete_my_code
         print("- sync_trigger_webhook start")
         record = self.sudo()
-        print(record)
-        if record.active:
+
+        request_data = json.loads(request.httprequest.data.decode("utf-8"))
+        is_delivered_or_seen = True
+        if "event" in request_data:
+            if request_data["event"] == "delivered" or request_data["event"] == "seen":
+                is_delivered_or_seen = False
+
+        if record.active and is_delivered_or_seen:
             start_result = record.sync_task_id.start(
                 record, args=(request.httprequest,)
             )
+
             if not start_result:
                 return self.make_response("Task or Project is disabled", 404)
 

@@ -209,7 +209,7 @@ def check_partner(partner):
         <field
             name="code"
         ><![CDATA[def handle_button():
-    viber_api.unset_webhook(webhooks.VIBER)
+    viber_api.unset_webhook()
         ]]></field>
     </record>
     <record id="viber_trigger_button_remove" model="sync.trigger.button">

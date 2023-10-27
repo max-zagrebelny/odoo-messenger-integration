@@ -45,6 +45,17 @@ class SyncTriggerAutomation(models.Model):
                 print(self.sync_task_id)
                 self.sync_task_id.start(self, args=(records,), with_delay=True)
 
+    def is_message_from_operators(self, records):
+        # Перевірка повідомлення від оператора чи від користувача мессенджера
+        # Якщо повідомлення від користувача тоді повертає False
+        if records._name == "mail.message":
+            if records.author_id.type_messenger == 'none' and records.author_id.id != 2:  # OdooBot
+                return True
+            else:
+                return False
+        else:
+            return True
+
     def is_record_mail_message(self, records):
         # Перевірка чи є повідомлення з каналу де спілкується оператор і користувач телеграма
         if records._name == "mail.message":

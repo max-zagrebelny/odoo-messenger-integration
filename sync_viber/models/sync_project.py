@@ -10,6 +10,7 @@ from viberbot.api.bot_configuration import BotConfiguration
 from odoo import _, api, models
 from odoo.tools.safe_eval import wrap_module
 
+from odoo.http import request as rq
 from odoo.addons.multi_livechat.tools import get_multi_livechat_eval_context
 from odoo.addons.sync.models.sync_project import AttrDict
 from odoo.addons.sync.tools import LogExternalQuery
@@ -89,8 +90,8 @@ class SyncProjectViber(models.Model):
             return viber.set_webhook(*args, **kwargs)
 
         @LogExternalQuery("Viber->unset_webhook", eval_context)
-        def unset_webhook(*args, **kwargs):
-            return viber.unset_webhook(*args, **kwargs)
+        def unset_webhook():
+            return viber.unset_webhook()
 
         @LogExternalQuery("Viber->get_user_details", eval_context)
         def get_user_details(user_id):
