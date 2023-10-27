@@ -7,7 +7,7 @@ from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
-ODOO_CHANNEL_TYPES = ["chat", "livechat", "group"]
+ODOO_CHANNEL_TYPES = ["chat", "livechat", "group", "channel"]
 
 
 class SyncTriggerAutomation(models.Model):
@@ -60,7 +60,7 @@ class SyncTriggerAutomation(models.Model):
         # Перевірка повідомлення від оператора чи від користувача мессенджера
         # Якщо повідомлення від користувача тоді повертає False
         if records._name == "mail.message":
-            if records.author_id.type_messenger == 'none':
+            if records.author_id.type_messenger == 'none' and records.author_id.id != 2: # OdooBot
                 return True
             else:
                 return False
