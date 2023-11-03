@@ -5,7 +5,8 @@
         <field name="name">all.mail.message.tree</field>
         <field name="model">mail.message</field>
         <field name="arch" type="xml">
-            <tree create="False" delete="False" action="action_open_channel" type="object">
+            <!--<tree create="False" delete="False" action="action_open_channel" type="object">-->
+            <tree delete="False" action="action_open_channel" type="object">
                 <field name="body" />
                 <field name="model" />
                 <field name="res_id" />
@@ -20,9 +21,9 @@
         <field name="model">mail.message</field>
         <field name="arch" type="xml">
             <search>
-                <filter string="Author from Telegram" name="author_telegram" domain="[('author_id.type_messenger', '=', 'telegram')]"/>
-                <filter string="Author from Viber" name="author_viber" domain="[('author_id.type_messenger', '=', 'viber')]"/>
-                <filter string="Author from Whatsapp" name="author_whatsapp" domain="[('author_id.type_messenger', '=', 'whatsapp')]"/>
+                <filter string="Author from Telegram" name="author_from_telegram" domain="[('author_id.type_messenger', 'in', ['telegram'])]"/>
+                <filter string="Author from Viber" name="author_from_viber" domain="[('author_id.type_messenger', 'in', ['viber'])]"/>
+                <filter string="Author from Whatsapp" name="author_from_whatsapp" domain="[('author_id.type_messenger', 'in', ['whatsapp'])]"/>
                 <field name="author_id" />
                 <field name="body" />
                 <field name="res_id"/>
@@ -42,11 +43,18 @@
         <field name="domain">['&amp;',('model', '=', 'mail.channel'), ('author_id', '!=', 2)]</field> <!--Виключаємо OdooBot-->
     </record>
 
+<!--    <menuitem-->
+<!--        id="all_message_and_newsletter_with_bots"-->
+<!--        name="All Messages"-->
+<!--        parent="sync_menu"-->
+<!--        sequence="20"-->
+<!--    />-->
+
     <menuitem
-        id="all_mail_message_with_bots"
-        name="All Messages"
-        parent="sync_menu"
-        action="mail_messages_action"
-        sequence="20"
+            id="all_message_with_bots"
+            name="Messages"
+            parent="all_message_and_newsletter_with_bots"
+            action="mail_messages_action"
+            sequence="10"
     />
 </odoo>

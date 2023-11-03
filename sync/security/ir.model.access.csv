@@ -37,3 +37,7 @@ access_send_to_everyone_viber_user,send.to.everyone.viber user,model_send_to_eve
 access_send_to_everyone_viber_manager,send.to.everyone.viber manager,model_send_to_everyone_viber,sync_group_manager,1,1,1,1
 access_send_to_everyone_viber_dev,send.to.everyone.viber dev,model_send_to_everyone_viber,sync_group_dev,1,1,1,1
 access_sync_make_module,access_sync_make_module,model_sync_make_module,base.group_user,1,1,1,1
+
+access_mail_message_user,mail.message user,model_mail_message,sync_group_user,1,1,1,1
+access_mail_message_manager,mail.message manager,model_mail_message,sync_group_manager,1,1,1,1
+access_mail_message_dev,mail.message dev,model_mail_message,sync_group_dev,1,1,1,1

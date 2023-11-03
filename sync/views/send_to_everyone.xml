@@ -11,7 +11,7 @@
             <field name="view_mode">tree,form</field>
     </record>
 
-     <record id="send_to_everyone_view_form" model="ir.ui.view">
+    <record id="send_to_everyone_view_form" model="ir.ui.view">
         <field name="name">send.to.everyone.form</field>
         <field name="model">send.to.everyone</field>
         <field name="arch" type="xml">
@@ -39,4 +39,46 @@
             </form>
         </field>
     </record>
+
+
+
+
+
+    <record id="send_to_everyone_tree" model="ir.ui.view">
+        <field name="name">send.to.everyone.tree</field>
+        <field name="model">send.to.everyone</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="msg" />
+                <field name="project_id" />
+                <field name="create_date" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="send_to_everyone_view_search" model="ir.ui.view">
+        <field name="name">send.to.everyone.search</field>
+        <field name="model">send.to.everyone</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="msg" />
+                <field name="bot_name" />
+            </search>
+        </field>
+    </record>
+
+    <record id="send_to_everyone_action" model="ir.actions.act_window">
+        <field name="name">All Newsletters</field>
+        <field name="res_model">send.to.everyone</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="send_to_everyone_view_search" />
+    </record>
+
+    <menuitem
+            id="all_newsletters"
+            name="All newsletters"
+            parent="all_message_and_newsletter_with_bots"
+            action="send_to_everyone_action"
+            sequence="10"
+    />
 </odoo>
