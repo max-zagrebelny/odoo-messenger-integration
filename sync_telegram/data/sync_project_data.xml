@@ -161,6 +161,9 @@ def handle_webhook(httprequest):
   if message.text == '/start':
     telegram.sendMessage(telegram_user_ref, "Вітаю, можете ввести Ваші дані", reply_markup=telegram.addKeyBoard(BUTTONS))
     return
+  elif message.text == '/test':
+    telegram.sendMessage(telegram_user_ref, "Тестове повідомлення \n https://www.google.com.ua")
+    return
   elif message.text == 'Вказати електрону пошту':
     telegram.sendMessage(telegram_user_ref, "Напишіть вашу електрону пошту \nНаприклад test@gmail.com",reply_markup=telegram.delKeyBoard())
     set_state(partner.id,bot_id,'mail')

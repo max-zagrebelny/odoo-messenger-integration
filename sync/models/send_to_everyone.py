@@ -11,6 +11,7 @@ class SendToEveryone(models.Model):
     link_text = fields.Char("Link text")
     project_id = fields.Many2one("sync.project")
     url = fields.Char("Image url")
+    bot_name = fields.Char('Bot Name', related='project_id.name')
 
 
 class SendToEveryoneViber(models.Model):

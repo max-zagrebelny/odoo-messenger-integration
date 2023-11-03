@@ -57,23 +57,51 @@ class SyncPartner(models.Model):
         return f
 
     def set_state(self, partner_id, bot_id, state):
-        print('------------------------')
         user = self.search([('bot_id', '=', bot_id), ('partner_id', '=', partner_id)])
         if not user:
             return
-        if user.state_user == 'phone' and state == 'None':
+        current_state = user.state_user
+        if (current_state == 'phone' or current_state == 'mail') and state == 'None':
             child_partner = self.env['res.partner'].browse(partner_id)
-            print(child_partner)
-            parent = self.env['res.partner'].search(
-                [('phone', '=', child_partner.phone), ('type_messenger', '=', 'none')])
+            is_deleting_partner = False
+            ch_phone = child_partner.phone
+            ch_email = child_partner.email
+            if current_state == 'phone':
+                parent = self.env['res.partner'].search(
+                    [('phone', '=', ch_phone), ('type_messenger', '=', 'none')])
+            else:
+                parent = self.env['res.partner'].search(
+                    [('email', '=', ch_email),
+                     ('type_messenger', '=', 'none')])
 
-            if not parent:
+            if not parent and not child_partner.parent_id:
                 list_name = child_partner.name.split('[')
                 list_name.pop()
-                name = ''.join(list_name)
-                parent = self.env['res.partner'].create({'name': name, 'phone': child_partner.phone})
-            print(parent)
-            child_partner.parent_id = parent.id
+                name = ' '.join(list_name)
+                parent = self.env['res.partner'].create({'name': name, 'phone': ch_phone, 'email': ch_email})
+            elif not parent and child_partner.parent_id:
+                parent = child_partner.parent_id
+                if not parent.email:
+                    parent.email = ch_email
+                if not parent.phone:
+                    parent.phone = ch_phone
+            else:
+                if child_partner.parent_id and parent.id != child_partner.parent_id.id:
+                    is_deleting_partner = True
+                    if current_state == 'phone':
+                        new_parent = child_partner.parent_id
+                        old_parent = parent
+                    else:
+                        new_parent = parent
+                        old_parent = child_partner.parent_id
+                    all = self.env['res.partner'].search([('parent_id','=',old_parent.id)])
+                    for partner in all:
+                        partner.parent_id = new_parent.id
+                    old_parent.action_archive()
+            if not parent.email and current_state == 'mail':
+                parent.email = ch_email
+            if not is_deleting_partner:
+                child_partner.parent_id = parent.id
         user.state_user = state
 
     def get_state(self, partner_id, bot_id):

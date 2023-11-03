@@ -7,4 +7,10 @@
         web_icon="sync,static/description/icon.png"
         name="Sync Studio"
     />
+    <menuitem
+        id="all_message_and_newsletter_with_bots"
+        name="All Messages"
+        parent="sync_menu"
+        sequence="20"
+    />
 </odoo>
