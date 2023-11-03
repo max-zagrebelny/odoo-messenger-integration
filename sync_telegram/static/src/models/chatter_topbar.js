@@ -23,7 +23,7 @@ registerPatch({
              if (partners.length === 0){
                 this.messaging.notify({
                     type: 'warning',
-                    message: this.env._t("Followers list is empty"),
+                    message: this.env._t("The partner is not in the follower list"),
                 });
                 return;
              }

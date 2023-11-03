@@ -46,7 +46,7 @@ To get an assistance on this module contact us by email :arrow_right: help@itpp.
 Further information
 ===================
 
-Odoo Apps Store: https://apps.odoo.com/apps/modules/14.0/sync_viber/
+Odoo Apps Store: https://apps.odoo.com//apps/modules/14.0/sync_viber
 
 
 Notifications on updates: `via Atom <https://github.com/itpp-labs/sync-addons/commits/14.0/sync_viber.atom>`_, `by Email <https://blogtrottr.com/?subscribe=https://github.com/itpp-labs/sync-addons/commits/14.0/sync_viber.atom>`_

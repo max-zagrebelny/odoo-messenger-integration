@@ -468,21 +468,61 @@ def handle_db(records):
   if not channel_links:
       return
   external_user_refs = [channel.external for channel in channel_links]
+  link_body = records.link if records.link else ""
+  link_type = "open-url" if records.link else "none"
+  ntf = None
+  msg_row = 7 if records.msg and not records.url and not records.link and not records.image else 3
 
+  if records.url or records.msg or records.link or records.image:
+    ntf = {
+
+        "Type":"rich_media",
+        "BgColor": "#fafafa",
+        "Buttons": []
+    }
+
+  if records.url:
+    ntf["Buttons"].append({
+              "Columns": 6,
+              "Rows": 4,
+              "ActionType": link_type,
+              "ActionBody": link_body,
+              "BgColor": "#ffffff",
+              "Image": records.url,
+              "Frame": {
+                "BorderWidth" : 0,
+                "CornerRadius": 10
+              },
+            })
+  if records.msg:
+    ntf["Buttons"].append({
+              "Columns": 6,
+              "Rows": msg_row,
+              "Text": "<font color='#323232'>{}</font>".format(records.msg),
+              "ActionType": link_type,
+              "ActionBody": link_body,
+              "TextVAlign": "middle",
+              "TextHAlign": "middle",
+              "TextShouldFit": True,
+              "BgColor": "#fafafa",
+              "TextSize": "small",
+            })
+
+  media = viber_messages.RichMediaMessage(rich_media=ntf, min_api_version=7)
   message = [keyboard_message]
 
   if records.rich_media:
-    message.insert(0, rich_media)
+    message.append(rich_media)
 
-  if records.msg:
-    message.insert(1, viber_messages.TextMessage(text=records.msg))
+  if records.url or records.msg or records.link or records.image:
+     message.append(media)
 
   for user_ref in external_user_refs:
-    send_viber_message(user_ref, message)
+      send_viber_message(user_ref, message)
+
 
 def send_viber_message(external_user_ref, message):
   viber_api.send_messages(external_user_ref, message)
-
 ]]></field>
     </record>
     <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">

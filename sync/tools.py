@@ -57,6 +57,6 @@ def url2bin(url):
 # E.g. to download file and save into in an attachment or Binary field
 def url2base64(url):
     content = url2bin(url)
-    if not bin:
+    if not content:
         return None
     return base64.b64encode(content)

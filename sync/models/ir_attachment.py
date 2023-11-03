@@ -16,7 +16,7 @@ class Attachment(models.Model):
             base_url,
             self.id,
             self.name,
-            self.access_token,
+            self.access_token
         )
         print(result)
         return result

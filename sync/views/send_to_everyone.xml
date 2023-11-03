@@ -16,12 +16,19 @@
         <field name="model">send.to.everyone</field>
         <field name="arch" type="xml">
             <form>
-                <sheet>
+               <sheet>
                     <group>
-                        <field name="msg" />
+                        <field name="image" widget="image"/>
+                        <field name="url"/>
+                        <field name="msg" widget="text_emojis" placeholder="Write a message..."/>
+                        <field name="link"/>
                     </group>
                 </sheet>
             </form>
+            <footer>
+                <button string="Send"  special="create" type="object" class="btn-primary o_mail_send"/>
+                <button string="Cancel" class="btn-secondary" special="cancel"/>
+            </footer>
         </field>
     </record>
 
@@ -32,11 +39,18 @@
             <form>
                 <sheet>
                     <group>
-                        <field name="msg" />
+                        <field name="image" widget="image"/>
+                        <field name="url"/>
+                        <field name="msg" widget="text_emojis" placeholder="Write a message..."/>
+                        <field name="link"/>
                         <field name="rich_media"/>
                     </group>
                 </sheet>
             </form>
+            <footer>
+                <button string="Send"  special="create" type="object" class="btn-primary o_mail_send"/>
+                <button string="Cancel" class="btn-secondary" special="cancel"/>
+            </footer>
         </field>
     </record>
 </odoo>
