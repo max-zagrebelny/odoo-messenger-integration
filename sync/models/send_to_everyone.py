@@ -12,10 +12,8 @@ class SendToEveryone(models.Model):
     project_id = fields.Many2one("sync.project")
     url = fields.Char("Image url")
     bot_name = fields.Char('Bot Name', related='project_id.name')
+    # bot_type = fields.Char('Bot type', related="project_id.eval_context_ids.name")
+    bot_type = fields.Char('Bot type')
+    rich_media = fields.Boolean("Carousel", default=False)
 
 
-class SendToEveryoneViber(models.Model):
-    _name = "send.to.everyone.viber"
-    _description = "Send message to all viber bot subscribers"
-    _inherit = "send.to.everyone"
-    rich_media = fields.Boolean("Carousel")

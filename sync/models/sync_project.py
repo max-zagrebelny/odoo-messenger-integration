@@ -155,24 +155,20 @@ class SyncProject(models.Model):
         self.active = False
 
     def action_send_to_everyone(self):
-        if self.eval_context_ids.name == "viber":
-            return {
-                'name': 'Написати повідомлення',
-                'view_mode': 'form',
-                'res_model': 'send.to.everyone.viber',
-                'type': 'ir.actions.act_window',
-                'target': 'new',
-                'context': {'default_project_id': self.id},
+
+        return {
+            'name': 'Написати повідомлення',
+            'view_mode': 'form',
+            'res_model': 'send.to.everyone',
+            'type': 'ir.actions.act_window',
+            'target': 'new',
+            'context': {
+                'default_project_id': self.id,
+                'save': 'Send',  # Змінено назву кнопки "Save" на "Send"
+                'discard': 'Cancel',  # Змінено назву кнопки "Discard" на "Cancel"
+                'default_bot_type': self.eval_context_ids.name
             }
-        else:
-            return {
-                'name': 'Написати повідомлення',
-                'view_mode': 'form',
-                'res_model': 'send.to.everyone',
-                'type': 'ir.actions.act_window',
-                'target': 'new',
-                'context': {'default_project_id': self.id},
-            }
+        }
 
     def _compute_eval_context_description(self):
         for r in self:

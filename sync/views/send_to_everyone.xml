@@ -1,15 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="send_to_everyone_action" model="ir.actions.act_window">
-            <field name="name">Send</field>
-            <field name="res_model">send.to.everyone</field>
-            <field name="view_mode">tree,form</field>
-    </record>
-    <record id="send_to_everyone_viber_action" model="ir.actions.act_window">
-            <field name="name">Send</field>
-            <field name="res_model">send.to.everyone.viber</field>
-            <field name="view_mode">tree,form</field>
-    </record>
 
     <record id="send_to_everyone_view_form" model="ir.ui.view">
         <field name="name">send.to.everyone.form</field>
@@ -17,46 +7,22 @@
         <field name="arch" type="xml">
             <form>
                <sheet>
+                   <field name="bot_type" invisible="1"/>
                     <group>
-                        <field name="image" widget="image"/>
-                        <field name="url"/>
+                        <field name="image" widget="image" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
+                        <field name="url" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
                         <field name="msg" widget="text_emojis" placeholder="Write a message..."/>
-                        <field name="link"/>
+                        <field name="link" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
+                        <field name="rich_media" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
                     </group>
                 </sheet>
+                <footer>
+                    <button string="Send"  special="save" type="object" class="btn-primary o_mail_send"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
             </form>
-            <footer>
-                <button string="Send"  special="create" type="object" class="btn-primary o_mail_send"/>
-                <button string="Cancel" class="btn-secondary" special="cancel"/>
-            </footer>
         </field>
     </record>
-
-    <record id="send_to_everyone_view_viber_form" model="ir.ui.view">
-        <field name="name">send.to.everyone.viber.form</field>
-        <field name="model">send.to.everyone.viber</field>
-        <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <group>
-                        <field name="image" widget="image"/>
-                        <field name="url"/>
-                        <field name="msg" widget="text_emojis" placeholder="Write a message..."/>
-                        <field name="link"/>
-                        <field name="rich_media"/>
-                    </group>
-                </sheet>
-            </form>
-            <footer>
-                <button string="Send"  special="create" type="object" class="btn-primary o_mail_send"/>
-                <button string="Cancel" class="btn-secondary" special="cancel"/>
-            </footer>
-        </field>
-    </record>
-
-
-
-
 
     <record id="send_to_everyone_tree" model="ir.ui.view">
         <field name="name">send.to.everyone.tree</field>
@@ -80,11 +46,10 @@
             </search>
         </field>
     </record>
-
     <record id="send_to_everyone_action" model="ir.actions.act_window">
         <field name="name">All Newsletters</field>
         <field name="res_model">send.to.everyone</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="send_to_everyone_view_search" />
     </record>
 

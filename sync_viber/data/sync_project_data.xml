@@ -529,7 +529,7 @@ def send_viber_message(external_user_ref, message):
         <field name="trigger_name">SEND_TO_EVERYONE</field>
         <field name="active" eval="True" />
         <field name="sync_task_id" ref="send-to-everyone--sync-task" />
-        <field name="model_id" ref="sync.model_send_to_everyone_viber" />
+        <field name="model_id" ref="sync.model_send_to_everyone" />
         <field name="trigger">on_create</field>
     </record>
 </odoo>
