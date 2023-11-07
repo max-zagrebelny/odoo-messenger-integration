@@ -1,5 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_sync_project_user,sync.project user,model_sync_project,sync_group_user,1,0,0,0
+access_sync_project_user,sync.project user,model_sync_project,sync_group_user,0,0,0,0
 access_sync_project_dev,sync.project dev,model_sync_project,sync_group_dev,1,1,0,1
 access_sync_project_manager,sync.project manager,model_sync_project,sync_group_manager,1,1,1,1
 access_sync_task_user,sync.task user,model_sync_task,sync_group_user,1,0,0,0
@@ -17,10 +17,12 @@ access_sync_trigger_cron_manager,sync.trigger.cron manager,model_sync_trigger_cr
 access_sync_trigger_webhook_user,sync.trigger.webhook user,model_sync_trigger_webhook,sync_group_user,1,0,0,0
 access_sync_trigger_webhook_dev,sync.trigger.webhook dev,model_sync_trigger_webhook,sync_group_dev,1,1,1,1
 access_sync_trigger_webhook_manager,sync.trigger.webhook manager,model_sync_trigger_webhook,sync_group_manager,1,1,1,1
-access_sync_job_user,sync.job user,model_sync_job,sync_group_user,1,0,0,0
+access_sync_job_user,sync.job user,model_sync_job,sync_group_user,0,0,0,0
 access_sync_job_dev,sync.job dev,model_sync_job,sync_group_dev,1,0,0,0
 access_sync_job_manager,sync.job manager,model_sync_job,sync_group_manager,1,1,1,1
-access_sync_link_user,sync.link user,model_sync_link,sync_group_user,1,1,1,1
+access_sync_link_user,sync.link user,model_sync_link,sync_group_user,0,0,0,0
+access_sync_link_dev,sync.link dev,model_sync_link,sync_group_dev,1,1,1,1
+access_sync_link_manager,sync.link manager,model_sync_link,sync_group_manager,1,1,1,1
 access_sync_project_param_user,sync.project.param user,model_sync_project_param,sync_group_user,1,0,0,0
 access_sync_project_param_dev,sync.project.param dev,model_sync_project_param,sync_group_dev,1,1,1,1
 access_sync_project_param_manager,sync.project.param manager,model_sync_project_param,sync_group_manager,1,1,1,1
@@ -30,7 +32,7 @@ access_sync_make_module,access_sync_make_module,model_sync_make_module,base.grou
 access_sync_partner_user,sync.partner user,model_sync_partner,sync_group_user,1,0,0,0
 access_sync_partner_dev,sync.partner dev,model_sync_partner,sync_group_dev,1,0,0,0
 access_sync_partner_manager,sync.partner manager,model_sync_partner,sync_group_manager,1,1,1,1
-access_send_to_everyone_user,send.to.everyone user,model_send_to_everyone,sync_group_user,1,1,1,1
+access_send_to_everyone_user,send.to.everyone user,model_send_to_everyone,sync_group_user,0,0,0,0
 access_send_to_everyone_manager,send.to.everyone manager,model_send_to_everyone,sync_group_manager,1,1,1,1
 access_send_to_everyone_dev,send.to.everyone dev,model_send_to_everyone,sync_group_dev,1,1,1,1
 access_mail_message_user,mail.message user,model_mail_message,sync_group_user,1,1,1,1
