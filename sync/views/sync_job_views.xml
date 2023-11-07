@@ -126,6 +126,7 @@
                             nolabel="1"
                             readonly="1"
                             editable="bottom"
+                            colspan="2"
                         >
                             <tree
                                 decoration-muted="level == 'debug'"
