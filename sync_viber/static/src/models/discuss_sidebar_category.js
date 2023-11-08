@@ -2,6 +2,7 @@
 
 import { clear } from "@mail/model/model_field_command";
 import { one } from "@mail/model/model_field";
+import { many } from "@mail/model/model_field";
 import { registerPatch } from "@mail/model/model_core";
 
 registerPatch({
@@ -62,7 +63,7 @@ registerPatch({
         supportedChannelTypes: {
             compute() {
                 if (this.discussAsMLChat_viber) {
-                    return ["viber"];
+                    return ["multi_livechat_viber"];
                 }
                 return this._super();
             },

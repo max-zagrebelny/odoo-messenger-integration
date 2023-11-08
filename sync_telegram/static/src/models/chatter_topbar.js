@@ -56,7 +56,7 @@ registerPatch({
             if (matchingChannels.length === 0) {
                 this.messaging.notify({
                     type: 'warning',
-                    message: this.env._t("This partner does not have a channel in this messenger"),
+                    message: this.env._t("The partner does not have a channel with this messenger"),
                 });
                 return;
             }

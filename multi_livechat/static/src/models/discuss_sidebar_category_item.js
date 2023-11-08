@@ -1,4 +1,5 @@
 /** @odoo-module **/
+
 import { clear } from "@mail/model/model_field_command";
 import { one } from "@mail/model/model_field";
 import { registerPatch } from "@mail/model/model_core";
@@ -9,7 +10,7 @@ registerPatch({
     fields: {
         avatarUrl: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_whatsapp') {
+                if (this.channel.channel_type.startsWith("multi_livechat_")) {
                     if (this.channel.correspondent) {
                         return this.channel.correspondent.avatarUrl;
                     }
@@ -19,7 +20,7 @@ registerPatch({
         },
         categoryCounterContribution: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_whatsapp') {
+                if (this.channel.channel_type.startsWith("multi_livechat_")) {
                     return this.channel.localMessageUnreadCounter > 0 ? 1 : 0;
                 }
                 return this._super();
@@ -27,7 +28,7 @@ registerPatch({
         },
         counter: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_whatsapp') {
+                if (this.channel.channel_type.startsWith("multi_livechat_")) {
                     return this.channel.localMessageUnreadCounter;
                 }
                 return this._super();
@@ -35,20 +36,20 @@ registerPatch({
         },
         hasThreadIcon: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_whatsapp') {
+                if (this.channel.channel_type.startsWith("multi_livechat_")) {
                     return clear();
                 }
                 return this._super();
             },
         },
-         hasSettingsCommand: {
+        hasSettingsCommand: {
             compute() {
-                return this.channel.channel_type === 'multi_livechat_whatsapp';
+                return this.channel.channel_type.startsWith("multi_livechat_");
             },
         },
         hasUnpinCommand: {
             compute() {
-                if (this.channel.channel_type === 'multi_livechat_whatsapp') {
+                if (this.channel.channel_type.startsWith("multi_livechat_")) {
                     return !this.channel.localMessageUnreadCounter;
                 }
                 return this._super();

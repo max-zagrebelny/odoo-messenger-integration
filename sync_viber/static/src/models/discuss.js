@@ -9,6 +9,6 @@ registerPatch({
         categoryMLChat_viber: one('DiscussSidebarCategory', {
             default: {},
             inverse: 'discussAsMLChat_viber',
-         }),
+        }),
     },
 });
