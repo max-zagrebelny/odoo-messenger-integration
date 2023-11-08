@@ -95,7 +95,10 @@ class SyncProjectTelegram(models.Model):
         def addKeyBoard(name_buttons: list):
             markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
             for name in name_buttons:
-                item = telebot.types.KeyboardButton(name)
+                if name == 'Вказати номер телефону':
+                    item = telebot.types.KeyboardButton(name, request_contact=True)
+                else:
+                    item = telebot.types.KeyboardButton(name)
                 markup.add(item)
             return markup
 
@@ -108,8 +111,9 @@ class SyncProjectTelegram(models.Model):
             # delete_my_code
             print("- sync_project  sendPhoto")
             channel = kwargs.pop("channel", None)
+            caption = kwargs.pop("caption", None)
             try:
-                bot.send_photo(chat_id, photo=base64.b64decode(datas))
+                bot.send_photo(chat_id, photo=base64.b64decode(datas), caption=caption)
             except Exception as e:
                 if channel is not None:
                     multi_livechat_context.message_post(channel, str(e))

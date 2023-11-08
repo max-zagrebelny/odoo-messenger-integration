@@ -261,7 +261,7 @@ def handle_webhook(httprequest):
   if isinstance(vrequest, viber_requests.ViberMessageRequest):
     partner_kwargs = dict(viber_api=viber_api, viber_user_ref=viber_user_ref)
     bot_id = bot.id
-    partner, is_new_partner = get_partner_with_create(bot_id, viber_user_ref, callback_func=partner_vals, callback_kwargs=partner_kwargs)
+    partner = get_partner(bot_id, viber_user_ref, callback_func=partner_vals, callback_kwargs=partner_kwargs)
 
     if params.WEBHOOK_CHAT != "no":
       channel_name = partner.name
@@ -303,7 +303,7 @@ def handle_webhook(httprequest):
 
       odoo_message_text = None
 
-      if data['message']['type'] == 'contact':
+      if data['message']['type'] == 'contact' and not partner.phone:
         set_state(partner.id,bot_id,'phone')
         partner.write({"phone": vrequest.message.contact.phone_number})
         set_state(partner.id,bot_id, 'None')
@@ -397,7 +397,7 @@ def process_message(message):
         return
 
     external_user_ref = channel_link.external
-    partner, is_new = get_partner_with_create(bot_id, external_user_ref)
+    partner = get_partner(bot_id, external_user_ref)
     check_partner(partner)
 
     if partner.id == message.author_id.id or message.author_id.id == multi_livechat.odoobot_id:
@@ -451,7 +451,7 @@ def send_viber_file(external_user_ref, media, size, file_name):
         <field name="model_id" ref="mail.model_mail_message" />
         <field name="trigger">on_create</field>
         <field name="filter_pre_domain" />
-        <field name="filter_domain">[["model","=","mail.channel"]]</field>
+        <field name="filter_domain">['&amp;',["model","=","mail.channel"], ["author_id.type_messenger", "=", "none"]]</field>
     </record>
 
     <record id="send-to-everyone--sync-task" model="sync.task">

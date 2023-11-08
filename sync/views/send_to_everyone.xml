@@ -9,10 +9,10 @@
                <sheet>
                    <field name="bot_type" invisible="1"/>
                     <group>
-                        <field name="image" widget="image" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
-                        <field name="url" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
+                        <field name="image" widget="image" invisible="1"/>
+                        <field name="url" invisible="1"/>
                         <field name="msg" widget="text_emojis" placeholder="Write a message..."/>
-                        <field name="link" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
+                        <field name="link" placeholder="Paste a link..."/>
                         <field name="rich_media" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
                     </group>
                 </sheet>
@@ -28,7 +28,7 @@
         <field name="name">send.to.everyone.tree</field>
         <field name="model">send.to.everyone</field>
         <field name="arch" type="xml">
-            <tree>
+            <tree create="False" delete="False" action="action_open_send_to_everyone" type="object">
                 <field name="msg" />
                 <field name="project_id" />
                 <field name="create_date" />

@@ -57,7 +57,7 @@ class SyncProject(models.Model):
     # TODO: delete in v17 release
     eval_context = fields.Selection([], string="Evaluation context")
     eval_context_ids = fields.Many2one(
-        "sync.project.context", string="Evaluation contexts", required=True
+        "sync.project.context", string="Evaluation contexts", required=True, ondelete='cascade'
     )
 
     eval_context_description = fields.Text(compute="_compute_eval_context_description")
@@ -86,15 +86,15 @@ class SyncProject(models.Model):
         compute="_compute_triggers", help="Manual Triggers"
     )
     trigger_button_ids = fields.Many2many(
-        "sync.trigger.button", compute="_compute_triggers", string="Manual Triggers"
+        "sync.trigger.button", compute="_compute_triggers", string="Manual Triggers", ondelete='cascade'
     )
-    job_ids = fields.One2many("sync.job", "project_id")
+    job_ids = fields.One2many("sync.job", "project_id", ondelete='cascade')
     job_count = fields.Integer(compute="_compute_job_count")
-    log_ids = fields.One2many("ir.logging", "sync_project_id")
+    log_ids = fields.One2many("ir.logging", "sync_project_id", ondelete='cascade')
     log_count = fields.Integer(compute="_compute_log_count")
 
     # delete_my_code
-    user_ids = fields.One2many('sync.partner', 'bot_id')
+    user_ids = fields.One2many('sync.partner', 'bot_id', ondelete='cascade')
     users_count = fields.Integer(compute="_compute_users_count")
 
     token = fields.Char('Token', required=True, default='Token')
@@ -107,7 +107,7 @@ class SyncProject(models.Model):
                              copy=False,
                              help="Type is used to separate New, Active Webhook, Not active Webhook")
 
-    send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id")
+    send_to_everyone_ids = fields.One2many("send.to.everyone", "project_id", ondelete='cascade')
     operator_ids = fields.Many2many("res.users")
 
     def compute_image_default(self):

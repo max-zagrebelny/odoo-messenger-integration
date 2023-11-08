@@ -37,7 +37,6 @@ class SyncPartner(models.Model):
 
     def get_partner_with_create(self, bot_id, external_id, callback_func=None, callback_kwargs=None):
         ''' If not exist create one'''
-        print('------------------')
         links = self.get_partner(bot_id, external_id)
         if not links and callback_func and callback_kwargs:
             vals = callback_func(**callback_kwargs)
@@ -47,8 +46,8 @@ class SyncPartner(models.Model):
             print(f"user : {partner.name}")
             self.set_user(partner.id, bot_id, external_id)
             print("set user")
-            return partner, True
-        return links, False
+            return partner
+        return links
 
     @property
     def odoo(self):
@@ -110,7 +109,7 @@ class SyncPartner(models.Model):
 
     def _get_eval_context(self):
         return {
-            'get_partner_with_create': self.get_partner_with_create,
+            'get_partner': self.get_partner_with_create,
             'get_state': self.get_state,
             'set_state': self.set_state,
         }
