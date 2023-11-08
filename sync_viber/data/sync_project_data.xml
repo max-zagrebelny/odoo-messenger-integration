@@ -14,52 +14,57 @@
         <field
             name="common_code"
         ><![CDATA[
+
 VIBER_PARTNER="VIBER_PARTNER"
 VIBER_CHANNEL="VIBER_CHANNEL"
 VIBER_THREAD="VIBER_THREAD"
 
-start = {
-            "Type": "keyboard",
-            "Buttons" : [{
-                "Columns": 3,
-                "Rows": 1,
-                "BgColor": "#91f2dc",
-                "ActionType": "reply",
-                "Text": "Почати"
-            }]
-}
-keyboard_start = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=start, min_api_version=7)
-
 keyboard = {
             "Type": "keyboard",
+            # "ButtonsGroupColumns":6,
+            # "ButtonsGroupRows":7,
             "Buttons" : [{
-                "Columns": 3,
+                "Columns": 6,
                 "Rows": 1,
-                "BgColor": "#91f2dc",
+                "BgColor": "#7394f2",
                 "ActionType": "reply",
                 "ActionBody": "/talk_with_operator",
+                "Frame": {
+                  "BorderWidth" : 0,
+                  "CornerRadius": 10
+                },
                 "Text": "Зв'язатись з оператором"
             }]
 
 }
 
+phone = {
+        "Columns": 6,
+        "Rows": 1,
+        "BgColor": "#7394f2",
+        "Text": "Поділитись номером телефону",
+        "ActionBody": "Поділитись номером телефону",
+        "Frame": {
+                  "BorderWidth" : 0,
+                  "CornerRadius": 10
+                },
+        "ActionType": "share-phone",
+}
+
 email = {
-          	    "Columns": 3,
+          	    "Columns": 6,
                 "Rows": 1,
-                "BgColor": "#91f2dc",
+                "BgColor": "#7394f2",
                 "ActionType": "reply",
                 "ActionBody": "/user_data",
+                "Frame": {
+                  "BorderWidth" : 0,
+                  "CornerRadius": 10
+                },
                 "Text": "Вказати електронну адресу"
           	}
 
-phone = {
-        "Columns": 3,
-        "Rows": 1,
-        "BgColor": "#91f2dc",
-        "Text": "Поділитись номером телефону",
-        "ActionBody": "Поділитись номером телефону",
-        "ActionType": "share-phone",
-}
+
 
 notification = {
       "Type":"rich_media",
@@ -146,7 +151,7 @@ notification = {
          }
       ]
 }
-rich_media = viber_messages.RichMediaMessage(rich_media=notification, min_api_version=6)
+rich_media = viber_messages.RichMediaMessage(rich_media=notification, min_api_version=7)
 keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
 
 def check_partner(partner):
@@ -155,6 +160,7 @@ def check_partner(partner):
   if not partner.phone:
     keyboard["Buttons"].append(phone)
   keyboard_message = viber_messages.KeyboardMessage(tracking_data='tracking_data', keyboard=keyboard, min_api_version=7)
+
 ]]></field>
     </record>
     <record id="bot-avatar-url--project-parameter" model="sync.project.param">
@@ -275,12 +281,15 @@ def handle_webhook(httprequest):
           CONN_WITH_OPERATOR = True
       if CONN_WITH_OPERATOR:
         channels, is_new_channel = multi_livechat.get_channel(VIBER_CHANNEL, viber_user_ref, channel_name, partner_ids, bot_id)
-
+        for operator in operators_user_ids:
+          if not operator in channels[0].channel_partner_ids.ids:
+            channels[0].write({"channel_partner_ids": partner_ids})
 
       if params.CHAT_MODEL != "res.partner" and CONN_WITH_OPERATOR:
         def thread_vals(partner):
           return {
-            "name": partner.name,
+            "name": partner.parent_id.name,
+            "partner_id": partner.parent_id.id,
           }
         thread_kwargs = dict(partner=partner)
         record_message = """<b><a href="{channel_url}">Chat with partner is created.</a></b>""".format(
@@ -303,7 +312,7 @@ def handle_webhook(httprequest):
 
       odoo_message_text = None
 
-      if data['message']['type'] == 'contact':
+      if data['message']['type'] == 'contact' and not partner.phone:
         set_state(partner.id,bot_id,'phone')
         partner.write({"phone": vrequest.message.contact.phone_number})
         set_state(partner.id,bot_id, 'None')
@@ -322,8 +331,11 @@ def handle_webhook(httprequest):
             validate_email(email, partner, viber_user_ref)
         elif vrequest.message.text == "/start":
           check_partner(partner)
-          email_text = "Будь ласка, представте деякі особисті дані для продовження"
-          viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=email_text), keyboard_message])
+          if not partner.email or not partner.phone:
+            email_text = "Будь ласка, представте деякі особисті дані для продовження"
+            viber_api.send_messages(viber_user_ref, [viber_messages.TextMessage(text=email_text), keyboard_message])
+          else:
+            viber_api.send_messages(viber_user_ref, [keyboard_message])
         elif CONN_WITH_OPERATOR:
           odoo_message_text = vrequest.message.text
           for channel in channels:
@@ -461,6 +473,7 @@ def send_viber_file(external_user_ref, media, size, file_name):
         <field
             name="code"
         ><![CDATA[
+
 def handle_db(records):
   if records.project_id.id != bot.id:
     return
@@ -468,61 +481,65 @@ def handle_db(records):
   if not channel_links:
       return
   external_user_refs = [channel.external for channel in channel_links]
-  link_body = records.link if records.link else ""
-  link_type = "open-url" if records.link else "none"
-  ntf = None
-  msg_row = 7 if records.msg and not records.url and not records.link and not records.image else 3
+  # link_body = records.link if records.link else ""
+  # link_type = "open-url" if records.link else "none"
+  # ntf = None
+  # msg_row = 7 if records.msg and not records.url and not records.link and not records.image else 3
 
-  if records.url or records.msg or records.link or records.image:
-    ntf = {
+  # if records.url or records.msg or records.link or records.image:
+  #   ntf = {
 
-        "Type":"rich_media",
-        "BgColor": "#fafafa",
-        "Buttons": []
-    }
+  #       "Type":"rich_media",
+  #       "BgColor": "#fafafa",
+  #       "Buttons": []
+  #   }
 
-  if records.url:
-    ntf["Buttons"].append({
-              "Columns": 6,
-              "Rows": 4,
-              "ActionType": link_type,
-              "ActionBody": link_body,
-              "BgColor": "#ffffff",
-              "Image": records.url,
-              "Frame": {
-                "BorderWidth" : 0,
-                "CornerRadius": 10
-              },
-            })
-  if records.msg:
-    ntf["Buttons"].append({
-              "Columns": 6,
-              "Rows": msg_row,
-              "Text": "<font color='#323232'>{}</font>".format(records.msg),
-              "ActionType": link_type,
-              "ActionBody": link_body,
-              "TextVAlign": "middle",
-              "TextHAlign": "middle",
-              "TextShouldFit": True,
-              "BgColor": "#fafafa",
-              "TextSize": "small",
-            })
+  # if records.url:
+  #   ntf["Buttons"].append({
+  #             "Columns": 6,
+  #             "Rows": 4,
+  #             "ActionType": link_type,
+  #             "ActionBody": link_body,
+  #             "BgColor": "#ffffff",
+  #             "Image": records.url,
+  #             "Frame": {
+  #               "BorderWidth" : 0,
+  #               "CornerRadius": 10
+  #             },
+  #           })
+  # if records.msg:
+  #   ntf["Buttons"].append({
+  #             "Columns": 6,
+  #             "Rows": msg_row,
+  #             "Text": "<font color='#323232'>{}</font>".format(records.msg),
+  #             "ActionType": link_type,
+  #             "ActionBody": link_body,
+  #             "TextVAlign": "middle",
+  #             "TextHAlign": "middle",
+  #             "TextShouldFit": True,
+  #             "BgColor": "#fafafa",
+  #             "TextSize": "small",
+  #           })
+  # media = viber_messages.RichMediaMessage(rich_media=ntf, min_api_version=7)
 
-  media = viber_messages.RichMediaMessage(rich_media=ntf, min_api_version=7)
-  message = [keyboard_message]
+  message = []
 
   if records.rich_media:
     message.append(rich_media)
 
-  if records.url or records.msg or records.link or records.image:
-     message.append(media)
+  if records.msg:
+     message.append(viber_messages.TextMessage(text=records.msg))
 
   for user_ref in external_user_refs:
+      partner, is_new = get_partner_with_create(bot.id, user_ref)
+      check_partner(partner)
+      message.append(keyboard_message)
       send_viber_message(user_ref, message)
 
 
 def send_viber_message(external_user_ref, message):
   viber_api.send_messages(external_user_ref, message)
+
 ]]></field>
     </record>
     <record id="send-to-everyone--db-trigger" model="sync.trigger.automation">

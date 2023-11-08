@@ -9,10 +9,10 @@
                <sheet>
                    <field name="bot_type" invisible="1"/>
                     <group>
-                        <field name="image" widget="image" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
-                        <field name="url" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
+<!--                        <field name="image" widget="image" attrs="{'invisible': [('bot_type','!=','viber')]}"/>-->
+<!--                        <field name="url" attrs="{'invisible': [('bot_type','!=','viber')]}"/>-->
                         <field name="msg" widget="text_emojis" placeholder="Write a message..."/>
-                        <field name="link" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
+<!--                        <field name="link" attrs="{'invisible': [('bot_type','!=','viber')]}"/>-->
                         <field name="rich_media" attrs="{'invisible': [('bot_type','!=','viber')]}"/>
                     </group>
                 </sheet>
