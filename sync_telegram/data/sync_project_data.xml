@@ -155,11 +155,11 @@ def handle_webhook(httprequest):
     }
 
   partner_kwargs = dict(update=update, telegram_user_ref=telegram_user_ref)
-  partner, is_new_partner = get_partner_with_create(bot_id, telegram_user_ref, callback_func=partner_vals, callback_kwargs=partner_kwargs)
+  partner = get_partner(bot_id, telegram_user_ref, callback_func=partner_vals, callback_kwargs=partner_kwargs)
 
   conn_with_operator = True if get_link(TELEGRAM_CHANNEL, telegram_user_ref, bot_id) else False
   if message.text == '/start':
-    telegram.sendMessage(telegram_user_ref, "Вітаю, можете ввести Ваші дані", reply_markup=telegram.addKeyBoard(BUTTONS))
+    telegram.sendMessage(telegram_user_ref, f"Вітаю, я {bot.name}. Для того щоб написати оператору натисніть кнопку 'Зв'язатися з оператором'. Для кращого співробітництва можете надати свої дані", reply_markup=telegram.addKeyBoard(BUTTONS))
     return
   elif message.text == '/test':
     telegram.sendMessage(telegram_user_ref, "Тестове повідомлення \n https://www.google.com.ua")
@@ -167,10 +167,6 @@ def handle_webhook(httprequest):
   elif message.text == 'Вказати електрону пошту':
     telegram.sendMessage(telegram_user_ref, "Напишіть вашу електрону пошту \nНаприклад test@gmail.com",reply_markup=telegram.delKeyBoard())
     set_state(partner.id,bot_id,'mail')
-    return
-  elif message.text == 'Вказати номер телефону':
-    telegram.sendMessage(telegram_user_ref, "Напишіть ваш номер телефону з командою \nНаприклад 380664553087",reply_markup=telegram.delKeyBoard())
-    set_state(partner.id,bot_id,'phone')
     return
   elif message.text == "Зв'язатися з оператором":
     conn_with_operator = True
@@ -183,15 +179,15 @@ def handle_webhook(httprequest):
         telegram.sendMessage(telegram_user_ref, "Дякую дані збережено", reply_markup=telegram.addKeyBoard(get_right_buttons(partner, telegram_user_ref, bot_id)))
         set_state(partner.id,bot_id,'None')
         return
-  elif get_state(partner.id,bot_id) == 'phone':
-    phone = message.text
-    if not re_match("^\\+?[1-9][0-9]{11,11}$",'+'+phone):
-        telegram.sendMessage(telegram_user_ref, "Неправильно введений номер телефону. Спробуйте ще раз")
-    else:
-        partner.write({'phone':phone})
-        telegram.sendMessage(telegram_user_ref, "Дякую дані збережено", reply_markup=telegram.addKeyBoard(get_right_buttons(partner, telegram_user_ref, bot_id)))
-        set_state(partner.id,bot_id,'None')
+  elif update.message.content_type == 'contact':
+    if data['message']['from']['id'] !=  data['message']['contact']['user_id']:
+        telegram.sendMessage(telegram_user_ref, "Треба поділитися своїм контактом")
         return
+    set_state(partner.id,bot_id,'phone')
+    partner.write({'phone':data['message']['contact']['phone_number'][1:]})
+    telegram.sendMessage(telegram_user_ref, "Дякую дані збережено", reply_markup=telegram.addKeyBoard(get_right_buttons(partner, telegram_user_ref, bot_id)))
+    set_state(partner.id,bot_id,'None')
+    return
 
   partner_ids = [partner.id] + operators_partner_list
   is_new_channel = False
@@ -318,7 +314,7 @@ def process_message(message):
     print('telegram_user_ref =',telegram_user_ref)
     #channel_link = get_link(TELEGRAM_CHANNEL, telegram_user_ref)
 
-    partner,is_new = get_partner_with_create(bot_id, telegram_user_ref)
+    partner = get_partner(bot_id, telegram_user_ref)
     print('odoobot_id =',odoobot_id)
     if partner.id == message.author_id.id or message.author_id.id == odoobot_id:
         # this message is from partner or odoo bot
@@ -358,7 +354,7 @@ def process_message(message):
         ]]></field>
     </record>
 
-        <record id="telegram_trigger_automation" model="sync.trigger.automation">
+    <record id="telegram_trigger_automation" model="sync.trigger.automation">
         <field name="trigger_name">ON_MESSAGE_POSTED</field>
         <field name="active" eval="True" />
         <field name="sync_task_id" ref="telegram_task_odoo2tele" />
@@ -383,9 +379,15 @@ def handle_db(records):
     if not channel_links:
         return
     external_user_refs = [channel.external for channel in channel_links]
-
-    for user_ref in external_user_refs:
-        send_telegram_message(user_ref, records.msg)
+    msg = records.msg if records.msg else ''
+    link = records.link if records.link else ''
+    message = msg+ '\n' + link
+    if records.image:
+      for user_ref in external_user_refs:
+        telegram.sendPhoto(user_ref, records.image, caption=message)
+    else:
+      for user_ref in external_user_refs:
+        send_telegram_message(user_ref, message)
 
 def send_telegram_message(external_user_ref, message):
   telegram.sendMessage(external_user_ref, message)

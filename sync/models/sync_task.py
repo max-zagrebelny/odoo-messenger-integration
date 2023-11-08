@@ -26,37 +26,41 @@ class SyncTask(models.Model):
     code = fields.Text("Code")
     code_check = fields.Text("Syntax check", store=False, readonly=True)
     active = fields.Boolean(default=True)
-    cron_ids = fields.One2many("sync.trigger.cron", "sync_task_id", copy=True)
+    cron_ids = fields.One2many("sync.trigger.cron", "sync_task_id", copy=True, ondelete='cascade')
     automation_ids = fields.One2many(
-        "sync.trigger.automation", "sync_task_id", copy=True
+        "sync.trigger.automation", "sync_task_id", copy=True, ondelete='cascade'
     )
-    webhook_ids = fields.One2many("sync.trigger.webhook", "sync_task_id", copy=True)
+    webhook_ids = fields.One2many("sync.trigger.webhook", "sync_task_id", copy=True, ondelete='cascade')
     button_ids = fields.One2many(
-        "sync.trigger.button", "sync_task_id", string="Manual Triggers", copy=True
+        "sync.trigger.button", "sync_task_id", string="Manual Triggers", copy=True, ondelete='cascade'
     )
     active_cron_ids = fields.Many2many(
         "sync.trigger.cron",
         string="Enabled Crons",
         compute="_compute_active_triggers",
         context={"active_test": False},
+        ondelete='cascade'
     )
     active_automation_ids = fields.Many2many(
         "sync.trigger.automation",
         string="Enabled DB Triggers",
         compute="_compute_active_triggers",
         context={"active_test": False},
+        ondelete='cascade'
     )
     active_webhook_ids = fields.Many2many(
         "sync.trigger.webhook",
         string="Enabled Webhooks",
         compute="_compute_active_triggers",
         context={"active_test": False},
+        ondelete='cascade'
     )
     active_button_ids = fields.Many2many(
         "sync.trigger.button",
         string="Enabled Buttons",
         compute="_compute_active_triggers",
         context={"active_test": False},
+        ondelete='cascade'
     )
     job_ids = fields.One2many("sync.job", "task_id")
     job_count = fields.Integer(compute="_compute_job_count")
